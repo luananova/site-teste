@@ -24,7 +24,7 @@ menu = """
 
 @app.route("/")
 def index():
-  return menu + "Olá, mundo! Esse é meu site. (Álvaro Justen)"
+  return menu + "Olá, mundo! Esse é meu site. (Luana Nova)"
 
 @app.route("/sobre")
 def sobre():
