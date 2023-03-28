@@ -89,7 +89,7 @@ def dedoduro2():
   sheet.append_row(["Luana", "Bora aprender Python", "A vida é muito doida"])
   return "Planilha escrita!"
 
-@app.route("/telegram-bot")
+@app.route("/telegram-bot", methods=["POST"])
 def telegram_bot():
   update = request.json
   chat_id = update["message"]["chat"]["id"]
