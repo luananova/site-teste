@@ -130,7 +130,7 @@ def inscrever():
 
             return render_template("success.html", message="Boa, se prepare para receber vaguinhas de um jeito prático semanalmente.")
 
-        return render_template("inscrever.html", title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente via Telegram.")
+        return render_template("inscrever.html", title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente. Vou enviar as mensagens pra você pelo Telegram @robo_de_lua_bot.")
 
     except:
         return render_template("error.html", message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
@@ -143,27 +143,38 @@ def index():
 
     
 # Lidando com as mensagerias no Telegram
-def handle_message(update, context):
+def start(update, context):
     # Obtendo o username do usuário que enviou a mensagem
-    username = update.message.from_user.username
-
-    # Verificando se o usuário está cadastrado na planilha
-    if username not in get_usernames_from_spreadsheet():
+    username = get_username(update)
+    
+    # Mensagem de boas-vindas e opções de ação para usuários cadastrados
+    if username in get_usernames_from_spreadsheet():
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Para ver as vagas disponíveis, envie 'vagas'.")
+        
+    # Mensagem para usuários não cadastrados
+    else:
         message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
         context.bot.send_message(chat_id=update.effective_chat.id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
+
+def handle_message(update, context):
+    # Obtendo o username do usuário que enviou a mensagem
+    username = get_username(update)
+
+    # Verificando se o usuário está cadastrado na planilha
+    if username not in get_usernames_from_spreadsheet():
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Você ainda não está cadastrado para receber vagas. Cadastre-se no site para começar a receber!")
     else:
-        # Verificando se há vagas novas
-        vagas_novas = comparar_vagas(raspar_vagas(), get_vagas_da_semana_anterior())
-
-        # Enviando as vagas novas para o usuário
-        message = "\n".join(vagas_novas) if vagas_novas else "Não há vagas novas no momento. Verifique novamente na próxima semana."
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Temos novas vagas disponíveis:\n\n{}".format(message))
-
-   
-       else:
-           context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis ou '/start' para se inscrever no serviço de notificação de vagas.")
-
+        message_text = message.text
+        if message_text == "vagas" or message_text == "Vagas":
+            # Verificando se há vagas novas
+            vagas_novas = comparar_vagas(raspar_vagas(), get_vagas_da_semana_anterior())
+          
+            # Enviando as vagas novas para o usuário
+             message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
+             context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
+        else:
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
    
 
 # Finalmente, iniciando o BOT
