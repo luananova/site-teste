@@ -5,7 +5,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 from bs4 import BeautifulSoup
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, render_template_string
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from telegram import Bot, Update
