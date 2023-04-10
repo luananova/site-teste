@@ -6,4 +6,3 @@ gunicorn
 oauth2client
 gspread
 python-telegram-bot
-hashlib
