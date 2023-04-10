@@ -170,8 +170,8 @@ def handle_message(update, context):
             vagas_novas = comparar_vagas(raspar_vagas(), get_vagas_da_semana_anterior())
           
             # Enviando as vagas novas para o usuário
-             message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
-             context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
+            message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
    
