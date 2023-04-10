@@ -24,7 +24,7 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-bot = telegram.Bot(token=TELEGRAM_API_KEY)
+bot = Bot(token=TELEGRAM_API_KEY)
 
 app = Flask(__name__)
 
@@ -187,7 +187,7 @@ def inscrever():
 
     
 # Lidando com as mensagerias no Telegram
-def start(update, context):
+def start(update: Update, context: CallbackContext) -> None:
     # Obtendo o username do usuário que enviou a mensagem
     username = get_username(update)
     
@@ -201,7 +201,7 @@ def start(update, context):
         context.bot.send_message(chat_id=update.effective_chat.id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
 
-def handle_message(update, context):
+def handle_message(update: Update, context: CallbackContext) -> None:
     # Obtendo o username do usuário que enviou a mensagem
     username = get_username(update)
 
