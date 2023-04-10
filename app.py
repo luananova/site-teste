@@ -56,6 +56,9 @@ def raspar_vagas():
 # Salvando o resultado em um arquivo txt para efeito comparativo posterior e prevenção de duplicidades
 with open("vagas_da_semana.txt", "w") as f:
     f.write(vagas_final)
+    
+    
+
 
 # Adicionando uma função para ler as informações dos usuários da planilha do Google Sheets  
 def get_users():
@@ -105,13 +108,26 @@ def atualizar_vagas_semanais():
 # Adicionando uma rota para o formulário de inscrição de usuários
 @app.route("/inscrever", methods=["GET", "POST"])
 def inscrever():
-    if request.method == "POST":
-        chat_id = request.form["chat_id"]
-        username = request.form["username"]
-        name = request.form["name"]
-        adicionar_usuario(chat_id, username, name)
-        return render_template("sucesso.html")
-    return render_template("inscrever.html", title="Quer receber vagas de Content semanalmente?", subtitle="É só informar seu usuário do Telegram e aguardar as mensagens do robôzinho com a curadoria.", button_text="Quero vagas"))
+    try:
+        if request.method == "POST":
+            name = request.form["name"]
+            username = request.form["username"]
+
+            # Verificando se o username já está cadastrado
+            usernames_cadastrados = sheet.col_values(2)[1:]
+            if username in usernames_cadastrados:
+                return render_template("error.html", message="Ei, você já se cadastrou pras vaguinhas!")
+
+            # Inserindo nova linha na planilha com as informações do novo usuário
+            row = [name, username]
+            sheet.append_row(row)
+
+            return render_template("success.html", message="Boa, se prepare para receber vaguinhas de um jeito prático semanalmente.")
+
+        return render_template("inscrever.html", title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente via Telegram.")
+
+    except:
+        return render_template("error.html", message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
 
 # Adicionando uma rota para a página inicial
 @app.route("/")
@@ -219,17 +235,20 @@ if __name__ == "__main__":
   
   <!DOCTYPE html>
 <html>
-  <head>
-    <title>{{ title }}</title>
-  </head>
-  <body>
-    <h1>{{ title }}</h1>
-    <p>{{ subtitle }}</p>
-    <form action="/inscrever" method="post">
-      <input type="text" name="chat_id" placeholder="Seu ID do Telegram">
-      <input type="text" name="username" placeholder="Seu nome de usuário do Telegram">
-      <input type="text" name="name" placeholder="Seu nome">
-      <button type="submit">{{ button_text }}</button>
-    </form>
-  </body>
+<div class="container">
+  <h1>{{title}}</h1>
+  <p>{{subtitle}}</p>
+  <form method="post" action="/inscrever">
+    <div class="form-group">
+      <label for="name">Seu nome</label>
+      <input type="text" class="form-control" id="name" name="name" required>
+    </div>
+    <div class="form-group">
+      <label for="username">Seu usuário do Telegram (com o '@')</label>
+      <input type="text" class="form-control" id="username" name="username" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Quero vaguinhas</button>
+  </form>
+  <a href="/">Voltar para a página inicial</a>
+</div>
 </html>
