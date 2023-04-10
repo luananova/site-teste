@@ -98,6 +98,17 @@ def get_usernames_from_spreadsheet():
     for row in sheet.get_all_values()[1:]:
         usernames.append(row[1])
     return usernames
+
+  
+def agendar_envio_vagas():
+    # Chama as funções para raspar as vagas e enviar para os usuários
+    raspar_vagas()
+    enviar_vagas()
+
+# Cria o agendamento para a função agendar_envio_vagas
+scheduler = BackgroundScheduler()
+scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
+scheduler.start()  
   
         
 def start(update, context):
@@ -108,13 +119,6 @@ def start(update, context):
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-
-def agendar_raspagem():
-    # Criando uma função para agendar a execução da função raspar_vagas() e atualizar os arquivos de vagas semanalmente
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(func=raspar_vagas, trigger="interval", days=7)
-    scheduler.add_job(func=atualizar_vagas_semanais, trigger="interval", days=7)
-    scheduler.start()
 
 # Adicionando uma rota para o formulário de inscrição de usuários
 @app.route("/inscrever", methods=["GET", "POST"])
@@ -140,6 +144,7 @@ def inscrever():
     except:
         return render_template("error.html", message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
 
+      
 # Adicionando uma rota para a página inicial
 @app.route("/")
 def index():
