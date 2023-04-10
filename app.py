@@ -56,6 +56,14 @@ def raspar_vagas():
 # Salvando o resultado em um arquivo txt para efeito comparativo posterior e prevenção de duplicidades
 with open("vagas_da_semana.txt", "w") as f:
     f.write(vagas_final)
+    
+# Se o usuário chegar primeiro ao bot do que ao site, levá-lo para o site para se inscrever
+def start(update, context):
+    message = "message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
+    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
+start_handler = CommandHandler('start', start)
+dispatcher.add_handler(start_handler)
 
 # Adicionando uma função para ler as informações dos usuários da planilha do Google Sheets  
 def get_usernames():
@@ -63,26 +71,35 @@ def get_usernames():
     return usernames
 
 # Criando a função enviar_vagas para enviar somente as vagas novas da semana atual para os usuários
-def enviar_vagas(update: Update, context: CallbackContext):
-    # Ler vagas da semana atual
-    with open("vagas_da_semana.txt", "r") as f:
-        vagas_semana_atual = f.read().splitlines()
+def enviar_vagas():
+    try:
+        # Lê vagas da semana atual
+        with open("vagas_da_semana.txt", "r") as f:
+            vagas_semana_atual = f.read().splitlines()
 
-    # Ler vagas da semana anterior
-    with open("vagas_semana_anterior.txt", "r") as f:
-        vagas_semana_anterior = f.read().splitlines()
+        # Lê vagas da semana anterior
+        with open("vagas_semana_anterior.txt", "r") as f:
+            vagas_semana_anterior = f.read().splitlines()
 
-    # Compara as vagas da semana atual com as da semana anterior
-    vagas_novas = []
-    for vaga in vagas_semana_atual:
-        if hashlib.md5(vaga.encode('utf-8')).hexdigest() not in [hashlib.md5(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
-            vagas_novas.append(vaga)
+        # Compara as vagas da semana atual com as da semana anterior
+        vagas_novas = []
+        for vaga in vagas_semana_atual:
+            if hashlib.md5(vaga.encode('utf-8')).hexdigest() not in [hashlib.md5(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
+                vagas_novas.append(vaga)
 
-    # Envia as vagas novas para os usuários
-    usernames = get_usernames()
-    for username in usernames:
-    for vaga in vagas_novas:
-        bot.send_message(chat_id=username, text=vaga)
+        # Verfica se há vagas novas e envia as mensagens apropriadas
+        usernames = get_usernames()        
+        if vagas_novas:
+            vagas_texto = "\n\n".join(vagas_novas)
+            for username in usernames:
+                bot.send_message(chat_id=username, text=f"Olá! Seguem as vagas novas desta semana:\n\n{vagas_texto}")
+        else:
+            for username in usernames:
+                bot.send_message(chat_id=chat_username, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
+
+    except Exception as e:
+        bot.send_message(chat_id=chat_username, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
+        print(str(e))
             
 # Criando uma função para agendar a execução da função raspar_vagas() e atualizar os arquivos de vagas semanalmente
 def agendar_raspagem():
@@ -130,32 +147,7 @@ def inscrever():
 def index():
     return "Apenas mais um bot latino-americano tentando fazer o povo de Conteúdo encontrar oportunidades. Se inscreva e ganhe o mundo mais cedo do que Belchior."
 
-# Criando a função adicionar_usuario() para guardar os dados no Google Sheets
-def adicionar_usuario(chat_id, username, name):
-    try:
-        sheet.append_row([chat_id, username, name])
-    except:
-        pass
-
-# Modificando a função enviar_vagas() para utilizar o Google Sheets
-def enviar_vagas(update: Update, context: CallbackContext):
-    try:
-        chat_id = update.message.chat_id
-        nome = update.message.chat.first_name
-
-        # Lendo as vagas da semana atual
-        with open("vagas_da_semana.txt", "r") as f:
-            vagas = f.read()
-
-        if vagas:
-            bot.send_message(chat_id=chat_id, text="Olá {}, seguem as vagas da semana:\n\n{}".format(nome, vagas))
-        else:
-            bot.send_message(chat_id=chat_id, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
-            
-    except Exception as e:
-    bot.send_message(chat_id=chat_id, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
-    print(str(e))
-
+  
 # Agora, vamos criar uma função para enviar as vagas novas para os usuários cadastrados. Essa função vai ser chamada no final da função que faz a comparação das vagas.
 def enviar_vagas_novas():
     try:
