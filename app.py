@@ -109,15 +109,6 @@ def agendar_envio_vagas():
 scheduler = BackgroundScheduler()
 scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
 scheduler.start()  
-  
-        
-def start(update, context):
-    # Se o usuário chegar primeiro ao bot do que ao site, levá-lo para o site para se inscrever
-    message = "message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
-    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
-
-start_handler = CommandHandler('start', start)
-dispatcher.add_handler(start_handler)
 
 
 # Adicionando uma rota para o formulário de inscrição de usuários
@@ -149,35 +140,34 @@ def inscrever():
 @app.route("/")
 def index():
     return "Apenas mais um bot latino-americano tentando fazer o povo de Conteúdo encontrar oportunidades. Se inscreva e ganhe o mundo mais cedo do que Belchior."
-      
+
     
-# Criando a função principal que vai rodar a raspagem de vagas, comparar com as vagas da semana anterior e enviar as vagas novas para os usuários. Essa função deve ser chamada semanalmente, utilizando o BackgroundScheduler.
-def main():
-    # Raspagem de vagas
-    vagas_da_semana = raspar_vagas()
+# Lidando com as mensagerias no Telegram
+def handle_message(update, context):
+    # Obtendo o username do usuário que enviou a mensagem
+    username = update.message.from_user.username
 
-    # Ler vagas da semana anterior
-    with open("vagas_da_semana_anterior.txt", "r") as f:
-        vagas_da_semana_anterior = f.read()
+    # Verificando se o usuário está cadastrado na planilha
+    if username not in get_usernames_from_spreadsheet():
+        message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
+        context.bot.send_message(chat_id=update.effective_chat.id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
 
-    # Comparar vagas e salvar as novas
-    vagas_novas = comparar_vagas(vagas_da_semana, vagas_da_semana_anterior)
+    else:
+        # Verificando se há vagas novas
+        vagas_novas = comparar_vagas(raspar_vagas(), get_vagas_da_semana_anterior())
 
-    # Enviar vagas novas para usuários
-    enviar_vagas_novas()
+        # Enviando as vagas novas para o usuário
+        message = "\n".join(vagas_novas) if vagas_novas else "Não há vagas novas no momento. Verifique novamente na próxima semana."
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Temos novas vagas disponíveis:\n\n{}".format(message))
 
-    # Salvar as vagas da semana atual para comparar na próxima semana
-    with open("vagas_da_semana_anterior.txt", "w") as f:
-        f.write(vagas_da_semana)
+   
+       else:
+           context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis ou '/start' para se inscrever no serviço de notificação de vagas.")
 
-# Finalmente, agendando a execução da função principal semanalmente
+   
+
+# Finalmente, iniciando o BOT
 if __name__ == "__main__":
-    # Agendando a função principal para rodar toda segunda-feira às 10:00
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(func=main, trigger="cron", day_of_week="mon", hour=10, minute=0)
-    scheduler.start()
-
-    # Iniciando o bot do Telegram
     updater = Updater(token=TELEGRAM_API_KEY)
     dispatcher = updater.dispatcher
 
@@ -186,7 +176,7 @@ if __name__ == "__main__":
 
     updater.start_polling()
     updater.idle()
-
+    
   
   <!DOCTYPE html>
 <html>
