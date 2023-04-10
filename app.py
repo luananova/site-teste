@@ -56,14 +56,11 @@ def raspar_vagas():
 # Salvando o resultado em um arquivo txt para efeito comparativo posterior e prevenção de duplicidades
 with open("vagas_da_semana.txt", "w") as f:
     f.write(vagas_final)
-    
-    
-
 
 # Adicionando uma função para ler as informações dos usuários da planilha do Google Sheets  
-def get_users():
-    users = sheet.get_all_records()
-    return users
+def get_usernames():
+    usernames = sheet.col_values(2)[1:]
+    return usernames
 
 # Criando a função enviar_vagas para enviar somente as vagas novas da semana atual para os usuários
 def enviar_vagas(update: Update, context: CallbackContext):
@@ -82,11 +79,10 @@ def enviar_vagas(update: Update, context: CallbackContext):
             vagas_novas.append(vaga)
 
     # Envia as vagas novas para os usuários
-    users = get_users()
-    for user in users:
-        chat_id = user["Chat ID"]
-        for vaga in vagas_novas:
-            bot.send_message(chat_id=chat_id, text=vaga)
+    usernames = get_usernames()
+    for username in usernames:
+    for vaga in vagas_novas:
+        bot.send_message(chat_id=username, text=vaga)
             
 # Criando uma função para agendar a execução da função raspar_vagas() e atualizar os arquivos de vagas semanalmente
 def agendar_raspagem():
