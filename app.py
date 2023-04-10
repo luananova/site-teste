@@ -69,9 +69,19 @@ dispatcher.add_handler(start_handler)
 def get_usernames():
     usernames = sheet.col_values(2)[1:]
     return usernames
+  
+# Adicionando uma função para atualizar as vagas semanais
+def atualizar_vagas_semanais():
+    # Ler vagas da semana atual
+    with open("vagas_da_semana.txt", "r") as f:
+        vagas_semana_atual = f.read()
 
-# Criando a função enviar_vagas para enviar somente as vagas novas da semana atual para os usuários
-def enviar_vagas():
+    # Salva as vagas da semana atual para comparar na próxima semana
+    with open("vagas_semana_anterior.txt", "w") as f:
+        f.write(vagas_semana_atual)
+
+# Criando a função para enviar somente as vagas novas da semana atual para os usuários
+def enviar_vagas_novas():
     try:
         # Lê vagas da semana atual
         with open("vagas_da_semana.txt", "r") as f:
@@ -100,23 +110,13 @@ def enviar_vagas():
     except Exception as e:
         bot.send_message(chat_id=chat_username, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
-            
+
 # Criando uma função para agendar a execução da função raspar_vagas() e atualizar os arquivos de vagas semanalmente
 def agendar_raspagem():
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=raspar_vagas, trigger="interval", days=7)
     scheduler.add_job(func=atualizar_vagas_semanais, trigger="interval", days=7)
     scheduler.start()
-
-# Adicionando uma função para atualizar as vagas semanais
-def atualizar_vagas_semanais():
-    # Ler vagas da semana atual
-    with open("vagas_da_semana.txt", "r") as f:
-        vagas_semana_atual = f.read()
-
-    # Salva as vagas da semana atual para comparar na próxima semana
-    with open("vagas_semana_anterior.txt", "w") as f:
-        f.write(vagas_semana_atual)
 
 # Adicionando uma rota para o formulário de inscrição de usuários
 @app.route("/inscrever", methods=["GET", "POST"])
@@ -146,44 +146,8 @@ def inscrever():
 @app.route("/")
 def index():
     return "Apenas mais um bot latino-americano tentando fazer o povo de Conteúdo encontrar oportunidades. Se inscreva e ganhe o mundo mais cedo do que Belchior."
-
-  
-# Agora, vamos criar uma função para enviar as vagas novas para os usuários cadastrados. Essa função vai ser chamada no final da função que faz a comparação das vagas.
-def enviar_vagas_novas():
-    try:
-        # Lendo as vagas da semana atual
-        with open("vagas_da_semana.txt", "r") as f:
-            vagas_semana_atual = f.read().split('\n')
-
-        # Lendo as vagas da semana anterior
-        with open("vagas_da_semana_anterior.txt", "r") as f:
-            vagas_semana_anterior = f.read().split('\n')
-
-        # Compara as vagas da semana atual com as da semana anterior
-        vagas_novas = []
-        for vaga in vagas_semana_atual:
-            if hashlib.md5(vaga.encode('utf-8')).hexdigest() not in [hashlib.md5(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
-                vagas_novas.append(vaga)
-
-        # Envia as vagas novas para os usuários
-        if vagas_novas:
-            for chat_id in sheet.col_values(1)[1:]:
-                nome = sheet.cell(int(chat_id), 3).value
-                bot.send_message(chat_id=chat_id, text="Olá {}, temos novas vagas disponíveis:\n\n{}".format(nome, '\n'.join(vagas_novas)))
-        else:
-            for chat_id in sheet.col_values(1)[1:]:
-                bot.send_message(chat_id=chat_id, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
-
-        # Salva as vagas da semana atual para comparar na próxima semana
-        with open("vagas_da_semana_anterior.txt", "w") as f:
-            f.write('\n'.join(vagas_semana_atual))
-
-    except Exception as e:
-        for chat_id in sheet.col_values(1)[1:]:
-            bot.send_message(chat_id=chat_id, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
-        print(str(e))
       
-
+    
 # Criando a função principal que vai rodar a raspagem de vagas, comparar com as vagas da semana anterior e enviar as vagas novas para os usuários. Essa função deve ser chamada semanalmente, utilizando o BackgroundScheduler.
 def main():
     # Raspagem de vagas
