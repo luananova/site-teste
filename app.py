@@ -186,24 +186,24 @@ if __name__ == "__main__":
 
     updater.start_polling()
     updater.idle()
+
     
-  
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-<div class="container">
-  <h1>{{title}}</h1>
-  <p>{{subtitle}}</p>
-  <form method="post" action="/inscrever">
-    <div class="form-group">
-      <label for="name">Seu nome</label>
-      <input type="text" class="form-control" id="name" name="name" required>
-    </div>
-    <div class="form-group">
-      <label for="username">Seu usuário do Telegram (com o '@')</label>
-      <input type="text" class="form-control" id="username" name="username" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Quero vaguinhas</button>
-  </form>
-  <a href="/">Voltar para a página inicial</a>
-</div>
+  <div class="container">
+    <h1>{{title}}</h1>
+    <p>{{subtitle}}</p>
+    <form method="post" action="/inscrever">
+      <div class="form-group">
+        <label for="name">Seu nome</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="username">Seu usuário do Telegram (com o '@')</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Quero vaguinhas</button>
+    </form>
+    <a href="/">Voltar para a página inicial</a>
+  </div>
 </html>
