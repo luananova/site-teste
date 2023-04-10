@@ -28,6 +28,7 @@ bot = Bot(token=TELEGRAM_API_KEY)
 
 app = Flask(__name__)
 
+
 def raspar_vagas():
     link = 'https://workingincontent.com/content-jobs/'
     requisicao = requests.get(link)
@@ -52,44 +53,24 @@ def raspar_vagas():
 
     vagas_final = '\n'.join(vagas_separadas)
     return vagas_final
-  
-# Salvando o resultado em um arquivo txt para efeito comparativo posterior e prevenção de duplicidades
-with open("vagas_da_semana.txt", "w") as f:
-    f.write(vagas_final)
-    
-# Se o usuário chegar primeiro ao bot do que ao site, levá-lo para o site para se inscrever
-def start(update, context):
-    message = "message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
-    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
-start_handler = CommandHandler('start', start)
-dispatcher.add_handler(start_handler)
-
-# Adicionando uma função para ler as informações dos usuários da planilha do Google Sheets  
-def get_usernames():
-    usernames = sheet.col_values(2)[1:]
-    return usernames
-  
-# Adicionando uma função para atualizar as vagas semanais
-def atualizar_vagas_semanais():
-    # Ler vagas da semana atual
-    with open("vagas_da_semana.txt", "r") as f:
-        vagas_semana_atual = f.read()
-
-    # Salva as vagas da semana atual para comparar na próxima semana
-    with open("vagas_semana_anterior.txt", "w") as f:
-        f.write(vagas_semana_atual)
-
-# Criando a função para enviar somente as vagas novas da semana atual para os usuários
-def enviar_vagas_novas():
+    # Salvando as vagas da semana atual
+    with open("vagas_da_semana.txt", "w") as f:
+        f.write(vagas_final)
+        
+        
+def enviar_vagas():
     try:
         # Lê vagas da semana atual
         with open("vagas_da_semana.txt", "r") as f:
             vagas_semana_atual = f.read().splitlines()
 
         # Lê vagas da semana anterior
-        with open("vagas_semana_anterior.txt", "r") as f:
-            vagas_semana_anterior = f.read().splitlines()
+        try:
+           with open("vagas_semana_anterior.txt", "r") as f:
+               vagas_semana_anterior = f.read().splitlines()
+        except FileNotFoundError:
+             vagas_semana_anterior = []
 
         # Compara as vagas da semana atual com as da semana anterior
         vagas_novas = []
@@ -98,7 +79,7 @@ def enviar_vagas_novas():
                 vagas_novas.append(vaga)
 
         # Verfica se há vagas novas e envia as mensagens apropriadas
-        usernames = get_usernames()        
+        usernames = get_usernames_from_spreadsheet()
         if vagas_novas:
             vagas_texto = "\n\n".join(vagas_novas)
             for username in usernames:
@@ -111,8 +92,25 @@ def enviar_vagas_novas():
         bot.send_message(chat_id=chat_username, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
 
-# Criando uma função para agendar a execução da função raspar_vagas() e atualizar os arquivos de vagas semanalmente
+def get_usernames_from_spreadsheet():
+    # Lê os usernames da planilha
+    usernames = []
+    for row in sheet.get_all_values()[1:]:
+        usernames.append(row[1])
+    return usernames
+  
+        
+def start(update, context):
+    # Se o usuário chegar primeiro ao bot do que ao site, levá-lo para o site para se inscrever
+    message = "message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
+    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
+start_handler = CommandHandler('start', start)
+dispatcher.add_handler(start_handler)
+
+
 def agendar_raspagem():
+    # Criando uma função para agendar a execução da função raspar_vagas() e atualizar os arquivos de vagas semanalmente
     scheduler = BackgroundScheduler()
     scheduler.add_job(func=raspar_vagas, trigger="interval", days=7)
     scheduler.add_job(func=atualizar_vagas_semanais, trigger="interval", days=7)
