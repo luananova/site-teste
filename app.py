@@ -12,6 +12,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from telegram import Bot, Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
 
@@ -25,6 +29,7 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 bot = Bot(token=TELEGRAM_API_KEY)
+bot.setWebhook(url='https://site-teste-luana.onrender.com/{}'.format(TELEGRAM_API_KEY))
 
 app = Flask(__name__)
 
@@ -105,11 +110,7 @@ def agendar_envio_vagas():
     raspar_vagas()
     enviar_vagas()
 
-# Cria o agendamento para a função agendar_envio_vagas
-scheduler = BackgroundScheduler()
-scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
-scheduler.start()  
-
+    
 # Criando a parte visual com HTML
 
 menu = """
@@ -184,9 +185,7 @@ def inscrever():
 
     except:
         return menu + render_template_string(erro_html, message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
-
-    
-# Lidando com as mensagerias no Telegram
+      
 
 # Lidando com as mensagerias no Telegram
 def start(update: Update, context: CallbackContext) -> None:
@@ -225,15 +224,31 @@ def handle_message(update: Update, context: CallbackContext) -> None:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
-   
 
-# Finalmente, iniciando o BOT
+
 if __name__ == "__main__":
-    updater = Updater(token=TELEGRAM_API_KEY)
-    dispatcher = updater.dispatcher
-
+    # Finalmente, o BOT
+    dispatcher = Dispatcher(bot, None, workers=0)
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-    updater.start_polling()
-    updater.idle()
+    # Configurando o webhook
+    app.config.from_object(__name__)
+
+    @app.route('/{}'.format(TELEGRAM_API_KEY), methods=['POST'])
+    def webhook():
+        update = telegram.Update.de_json(request.get_json(force=True), bot)
+        dispatcher.process_update(update)
+        return 'ok'
+
+    # Iniciando a aplicação
+    if 'DYNO' in os.environ:
+        port = int(os.environ.get('PORT', 5000))
+        app.run(host='0.0.0.0', port=port)
+    else:
+        app.run(debug=True)
+
+    # Agendando o envio de vagas
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
+    scheduler.start()
