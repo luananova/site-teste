@@ -1,5 +1,6 @@
 import os
 import requests
+import telegram
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
