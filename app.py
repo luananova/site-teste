@@ -109,6 +109,56 @@ scheduler = BackgroundScheduler()
 scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
 scheduler.start()  
 
+# Criando a parte visual com HTML
+
+menu = """
+<a href="/">Página inicial</a> | <a href="/inscrever">Receba vagas de Content</a>
+<br>
+"""
+
+inscrever_html = """
+<html>
+  <div class="container">
+    <h1>{{title}}</h1>
+    <p>{{subtitle}}</p>
+    <form method="post" action="/inscrever">
+      <div class="form-group">
+        <label for="name">Seu nome</label>
+        <input type="text" class="form-control" id="name" name="name" required>
+      </div>
+      <div class="form-group">
+        <label for="username">Seu usuário do Telegram (com o '@')</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Quero vaguinhas</button>
+    </form>
+    <a href="/">Voltar para a página inicial</a>
+  </div>
+</html>
+"""
+
+sucesso_html = """
+<html>
+  <body>
+    <h1>Sucesso!</h1>
+    <p>{{message}}</p>
+  </body>
+</html>
+"""
+
+erro_html = """
+<html>
+  <body>
+    <h1>Erro!</h1>
+    <p>{{message}}</p>
+  </body>
+</html>
+"""
+
+# Adicionando uma rota para a página inicial
+@app.route("/")
+def index():
+    return menu + "Apenas mais um bot latino-americano tentando fazer o povo de Conteúdo encontrar oportunidades. Se inscreva e ganhe o mundo mais cedo do que Belchior."
 
 # Adicionando uma rota para o formulário de inscrição de usuários
 @app.route("/inscrever", methods=["GET", "POST"])
@@ -121,24 +171,18 @@ def inscrever():
             # Verificando se o username já está cadastrado
             usernames_cadastrados = sheet.col_values(2)[1:]
             if username in usernames_cadastrados:
-                return render_template("error.html", message="Ei, você já se cadastrou pras vaguinhas!")
+                return menu + render_template_string(erro_html, message="Você já se cadastrou pras vaguinhas! Agora é só aguardar as atualizações no seu Telegram.")
 
             # Inserindo nova linha na planilha com as informações do novo usuário
             row = [name, username]
             sheet.append_row(row)
 
-            return render_template("success.html", message="Boa, se prepare para receber vaguinhas de um jeito prático semanalmente.")
+            return menu + render_template_string(sucesso_html, message="Se prepare para receber vaguinhas de um jeito prático semanalmente.")
 
-        return render_template("inscrever.html", title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente. Vou enviar as mensagens pra você pelo Telegram @robo_de_lua_bot.")
+        return menu + render_template_string(inscrever_html, title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente. Vou enviar as mensagens pra você pelo Telegram @robo_de_lua_bot.")
 
     except:
-        return render_template("error.html", message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
-
-      
-# Adicionando uma rota para a página inicial
-@app.route("/")
-def index():
-    return "Apenas mais um bot latino-americano tentando fazer o povo de Conteúdo encontrar oportunidades. Se inscreva e ganhe o mundo mais cedo do que Belchior."
+        return menu + render_template_string(erro_html, message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
 
     
 # Lidando com as mensagerias no Telegram
@@ -186,24 +230,3 @@ if __name__ == "__main__":
 
     updater.start_polling()
     updater.idle()
-
-    
-<!DOCTYPE html>
-<html>
-  <div class="container">
-    <h1>{{title}}</h1>
-    <p>{{subtitle}}</p>
-    <form method="post" action="/inscrever">
-      <div class="form-group">
-        <label for="name">Seu nome</label>
-        <input type="text" class="form-control" id="name" name="name" required>
-      </div>
-      <div class="form-group">
-        <label for="username">Seu usuário do Telegram (com o '@')</label>
-        <input type="text" class="form-control" id="username" name="username" required>
-      </div>
-      <button type="submit" class="btn btn-primary">Quero vaguinhas</button>
-    </form>
-    <a href="/">Voltar para a página inicial</a>
-  </div>
-</html>
