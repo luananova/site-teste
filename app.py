@@ -178,7 +178,43 @@ def enviar_vagas_novas():
         for chat_id in sheet.col_values(1)[1:]:
             bot.send_message(chat_id=chat_id, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
+      
 
+# Criando a função principal que vai rodar a raspagem de vagas, comparar com as vagas da semana anterior e enviar as vagas novas para os usuários. Essa função deve ser chamada semanalmente, utilizando o BackgroundScheduler.
+def main():
+    # Raspagem de vagas
+    vagas_da_semana = raspar_vagas()
+
+    # Ler vagas da semana anterior
+    with open("vagas_da_semana_anterior.txt", "r") as f:
+        vagas_da_semana_anterior = f.read()
+
+    # Comparar vagas e salvar as novas
+    vagas_novas = comparar_vagas(vagas_da_semana, vagas_da_semana_anterior)
+
+    # Enviar vagas novas para usuários
+    enviar_vagas_novas()
+
+    # Salvar as vagas da semana atual para comparar na próxima semana
+    with open("vagas_da_semana_anterior.txt", "w") as f:
+        f.write(vagas_da_semana)
+
+# Finalmente, agendando a execução da função principal semanalmente
+if __name__ == "__main__":
+    # Agendando a função principal para rodar toda segunda-feira às 10:00
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(func=main, trigger="cron", day_of_week="mon", hour=10, minute=0)
+    scheduler.start()
+
+    # Iniciando o bot do Telegram
+    updater = Updater(token=TELEGRAM_API_KEY)
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+
+    updater.start_polling()
+    updater.idle()
 
   
   <!DOCTYPE html>
