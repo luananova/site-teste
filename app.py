@@ -23,7 +23,7 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-bot = Bot(token=TELEGRAM_API_KEY)
+bot = telegram.Bot(token=TELEGRAM_API_KEY)
 
 app = Flask(__name__)
 
