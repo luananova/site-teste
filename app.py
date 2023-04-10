@@ -187,6 +187,8 @@ def inscrever():
 
     
 # Lidando com as mensagerias no Telegram
+
+# Lidando com as mensagerias no Telegram
 def start(update: Update, context: CallbackContext) -> None:
     # Obtendo o username do usuário que enviou a mensagem
     username = get_username(update)
@@ -197,10 +199,10 @@ def start(update: Update, context: CallbackContext) -> None:
         
     # Mensagem para usuários não cadastrados
     else:
-        message = "Olá! Se inscreva [aqui](https://site-teste-luana.onrender.com/inscrever) para receber vagas em Conteúdo semanalmente."
-        context.bot.send_message(chat_id=update.effective_chat.id, text=message, parse_mode=telegram.ParseMode.MARKDOWN)
-
-
+        reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
+        context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Se inscreva para receber vagas em Conteúdo semanalmente.", reply_markup=reply_markup)
+      
+      
 def handle_message(update: Update, context: CallbackContext) -> None:
     # Obtendo o username do usuário que enviou a mensagem
     username = get_username(update)
@@ -209,7 +211,11 @@ def handle_message(update: Update, context: CallbackContext) -> None:
     if username not in get_usernames_from_spreadsheet():
         context.bot.send_message(chat_id=update.effective_chat.id, text="Você ainda não está cadastrado para receber vagas. Cadastre-se no site para começar a receber!")
     else:
-        message_text = message.text
+        # Verificando se o usuário enviou alguma mensagem
+        if not update.message:
+            return
+
+        message_text = update.message.text
         if message_text == "vagas" or message_text == "Vagas":
             # Verificando se há vagas novas
             vagas_novas = comparar_vagas(raspar_vagas(), get_vagas_da_semana_anterior())
