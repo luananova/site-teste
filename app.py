@@ -186,7 +186,7 @@ def inscrever():
 # Lidando com as mensagerias no Telegram
 def start(update: Update, context: CallbackContext) -> None:
     # Obtendo o username do usuário que enviou a mensagem
-    username = get_username(update)
+    username = update.effective_user.username
     
     # Mensagem de boas-vindas e opções de ação para usuários cadastrados
     if username in get_usernames_from_spreadsheet():
