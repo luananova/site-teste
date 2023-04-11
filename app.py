@@ -59,14 +59,7 @@ def raspar_vagas():
     # Salvando as vagas da semana atual
     with open("vagas_da_semana.txt", "w") as f:
         f.write(vagas_final)
-        
-def get_usernames_from_spreadsheet():
-    # Lê os usernames da planilha
-    usernames = []
-    for row in sheet.get_all_values()[2:]:
-        usernames.append(row[1])
-    return usernames
-        
+
 def enviar_vagas():
     try:
         # Lê vagas da semana atual
@@ -86,18 +79,17 @@ def enviar_vagas():
           if hashlib.sha256(vaga.encode('utf-8')).hexdigest() not in [hashlib.sha256(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
             vagas_novas.append(vaga)
 
-        # Verfica se há vagas novas e envia as mensagens apropriadas
-        usernames = get_usernames_from_spreadsheet()
-        if vagas_novas:
-            vagas_texto = "\n\n".join(vagas_novas)
-            for username in usernames:
+        # Verfica se há vagas novas e envia as mensagens apropriadas para os usuários cadastrados na planilha
+        for row in sheet.get_all_values()[1:]:
+            username = row[1]
+            if vagas_novas:
+                vagas_texto = "\n\n".join(vagas_novas)
                 bot.send_message(chat_id=username, text=f"Olá! Seguem as vagas novas desta semana:\n\n{vagas_texto}")
-        else:
-            for username in usernames:
+            else:
                 bot.send_message(chat_id=username, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
 
     except Exception as e:
-        bot.send_message(chat_id=username, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
+        bot.send_message(chat_id=TELEGRAM_ADMIN_ID, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
 
   
@@ -185,8 +177,8 @@ def inscrever():
 
 # Lidando com as mensagerias no Telegram
 def start(update: Update, context: CallbackContext) -> None:
-    # Obtendo o username do usuário que enviou a mensagem
-    username = update.effective_user.username
+    # Obtendo o chat_id do usuário que enviou a mensagem
+    chat_id = update.message.chat_id
     
     # Mensagem de boas-vindas e opções de ação para usuários cadastrados
     if username in get_usernames_from_spreadsheet():
@@ -199,8 +191,8 @@ def start(update: Update, context: CallbackContext) -> None:
       
       
 def handle_message(update: Update, context: CallbackContext) -> None:
-    # Obtendo o username do usuário que enviou a mensagem
-    username = update.effective_user.username
+    # Obtendo o chat_id do usuário que enviou a mensagem
+    chat_id = update.message.chat_id
 
     # Verificando se o usuário está cadastrado na planilha
     if username not in get_usernames_from_spreadsheet():
