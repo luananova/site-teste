@@ -59,6 +59,12 @@ def raspar_vagas():
     with open("vagas_da_semana.txt", "w") as f:
         f.write(vagas_final)
         
+def get_usernames_from_spreadsheet():
+    # Lê os usernames da planilha
+    usernames = []
+    for row in sheet.get_all_values()[2:]:
+        usernames.append(row[1])
+    return usernames
         
 def enviar_vagas():
     try:
@@ -76,8 +82,8 @@ def enviar_vagas():
         # Compara as vagas da semana atual com as da semana anterior
         vagas_novas = []
         for vaga in vagas_semana_atual:
-            if hashlib.md5(vaga.encode('utf-8')).hexdigest() not in [hashlib.md5(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
-                vagas_novas.append(vaga)
+          if hashlib.sha256(vaga.encode('utf-8')).hexdigest() not in [hashlib.sha256(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
+            vagas_novas.append(vaga)
 
         # Verfica se há vagas novas e envia as mensagens apropriadas
         usernames = get_usernames_from_spreadsheet()
@@ -87,18 +93,11 @@ def enviar_vagas():
                 bot.send_message(chat_id=username, text=f"Olá! Seguem as vagas novas desta semana:\n\n{vagas_texto}")
         else:
             for username in usernames:
-                bot.send_message(chat_id=chat_username, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
+                bot.send_message(chat_id=username, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
 
     except Exception as e:
-        bot.send_message(chat_id=chat_username, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
+        bot.send_message(chat_id=username, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
-
-def get_usernames_from_spreadsheet():
-    # Lê os usernames da planilha
-    usernames = []
-    for row in sheet.get_all_values()[1:]:
-        usernames.append(row[1])
-    return usernames
 
   
 def agendar_envio_vagas():
@@ -200,7 +199,7 @@ def start(update: Update, context: CallbackContext) -> None:
       
 def handle_message(update: Update, context: CallbackContext) -> None:
     # Obtendo o username do usuário que enviou a mensagem
-    username = get_username(update)
+    username = update.effective_user.username
 
     # Verificando se o usuário está cadastrado na planilha
     if username not in get_usernames_from_spreadsheet():
@@ -213,7 +212,7 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         message_text = update.message.text
         if message_text == "vagas" or message_text == "Vagas":
             # Verificando se há vagas novas
-            vagas_novas = comparar_vagas(raspar_vagas(), get_vagas_da_semana_anterior())
+            vagas_novas = vagas_novas(raspar_vagas())
           
             # Enviando as vagas novas para o usuário
             message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
