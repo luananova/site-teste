@@ -26,7 +26,7 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 bot = Bot(token=TELEGRAM_API_KEY)
-bot.setWebhook(url='https://site-teste-luana.onrender.com/{}'.format(TELEGRAM_API_KEY))
+bot.setWebhook(url='https://site-teste-luana.onrender.com/telegram-bot')
 
 app = Flask(__name__)
 
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     # Configurando o webhook
     app.config.from_object(__name__)
 
-    @app.route('/{}'.format(TELEGRAM_API_KEY), methods=['POST'])
+    @app.route('/telegram-bot', methods=['POST'])
     def webhook():
         update = telegram.Update.de_json(request.get_json(force=True), bot)
         dispatcher.process_update(update)
