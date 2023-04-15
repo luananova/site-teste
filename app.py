@@ -12,7 +12,8 @@ from flask import Flask, render_template, request, jsonify, render_template_stri
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from telegram import Bot, Update, ForceReply
-from telegram.ext import Updater, Dispatcher, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext.dispatcher import Dispatcher
 
 TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
