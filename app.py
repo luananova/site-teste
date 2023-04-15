@@ -249,20 +249,21 @@ scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
 scheduler.start()
 
 
+# Configurando o webhook
+app.config.from_object(__name__)
+
+@app.route('/telegram-bot', methods=['POST'])
+def webhook():
+    update = telegram.Update.de_json(request.get_json(force=True), bot)
+    dispatcher.process_update(update)
+    return 'ok'
+
+  
 if __name__ == "__main__":
     # Finalmente, o BOT
     dispatcher = Dispatcher(bot, None, workers=0)
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
-    # Configurando o webhook
-    app.config.from_object(__name__)
-
-    @app.route('/telegram-bot', methods=['POST'])
-    def webhook():
-        update = telegram.Update.de_json(request.get_json(force=True), bot)
-        dispatcher.process_update(update)
-        return 'ok'
 
     # Iniciando a aplicação
     if 'DYNO' in os.environ:
