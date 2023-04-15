@@ -2,6 +2,7 @@ import os
 import requests
 import telegram
 import shutil
+import asyncio
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -27,7 +28,9 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 bot = Bot(token=TELEGRAM_API_KEY)
-bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot')
+asyncio.run(bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot'))
+
+dispatcher = Dispatcher(bot, None, workers=0)
 
 app = Flask(__name__)
 
@@ -261,7 +264,6 @@ def webhook():
   
 if __name__ == "__main__":
     # Finalmente, o BOT
-    dispatcher = Dispatcher(bot, None, workers=0)
     dispatcher.add_handler(CommandHandler("start", start))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
