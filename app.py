@@ -27,8 +27,22 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-bot = Bot(token=TELEGRAM_API_KEY)
-asyncio.run(bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot'))
+import asyncio
+import os
+from telegram.ext import Updater, CommandHandler
+
+
+# Definindo a função async
+async def set_webhook():
+    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
+    bot_token = Bot(token=TELEGRAM_API_KEY)
+    bot = Updater(bot_token, use_context=True).bot
+    webhook_url = f'{app_url}/{bot_token}'
+    return await bot.set_webhook(url=webhook_url)
+
+  
+# Chamando a função com asyncio.run()
+asyncio.run(set_webhook())
 
 dispatcher = Dispatcher(bot, None, workers=0)
 
