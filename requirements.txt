@@ -5,4 +5,4 @@ Flask
 gunicorn
 oauth2client
 gspread
-python-telegram-bot==14.4.1
+python-telegram-bot
