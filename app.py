@@ -27,7 +27,7 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 bot = Bot(token=TELEGRAM_API_KEY)
-bot.setWebhook(url='https://site-teste-luana.onrender.com/telegram-bot')
+bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot')
 
 app = Flask(__name__)
 
