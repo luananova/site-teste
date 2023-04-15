@@ -1,6 +1,7 @@
 import os
 import requests
 import telegram
+import shutil
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -9,7 +10,7 @@ from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, jsonify, render_template_string
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from telegram import Bot, Update
+from telegram import Bot, Update, ForceReply
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 
 TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
@@ -59,7 +60,7 @@ def raspar_vagas():
     # Salvando as vagas da semana atual
     with open("vagas_da_semana.txt", "w") as f:
         f.write(vagas_final)
-
+        
 def enviar_vagas():
     try:
         # Lê vagas da semana atual
@@ -91,6 +92,8 @@ def enviar_vagas():
     except Exception as e:
         bot.send_message(chat_id=TELEGRAM_ADMIN_ID, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
+        
+    shutil.move("vagas_da_semana.txt", "vagas_semana_anterior.txt") # Movendo os arquivos para que possamos compará-los semana a semana
 
   
 def agendar_envio_vagas():
@@ -173,12 +176,37 @@ def inscrever():
 
     except:
         return menu + render_template_string(erro_html, message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
-      
 
+      
 # Lidando com as mensagerias no Telegram
+
+def get_usernames_from_spreadsheet():
+    usernames_cadastrados = sheet.col_values(2)[1:]
+    return usernames_cadastrados  
+
+  
+def get_vagas_novas():
+    try:
+        with open("vagas_da_semana.txt", "r") as f:
+            vagas_semana_atual = f.read().splitlines()
+
+        with open("vagas_semana_anterior.txt", "r") as f:
+            vagas_semana_anterior = f.read().splitlines()
+    except FileNotFoundError:
+        vagas_semana_anterior = []
+
+    vagas_novas = []
+    for vaga in vagas_semana_atual:
+        if hashlib.sha256(vaga.encode('utf-8')).hexdigest() not in [hashlib.sha256(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
+            vagas_novas.append(vaga)
+
+    return vagas_novas
+
+  
 def start(update: Update, context: CallbackContext) -> None:
     # Obtendo o chat_id do usuário que enviou a mensagem
     chat_id = update.message.chat_id
+    username = update.message.from_user.username
     
     # Mensagem de boas-vindas e opções de ação para usuários cadastrados
     if username in get_usernames_from_spreadsheet():
@@ -193,6 +221,7 @@ def start(update: Update, context: CallbackContext) -> None:
 def handle_message(update: Update, context: CallbackContext) -> None:
     # Obtendo o chat_id do usuário que enviou a mensagem
     chat_id = update.message.chat_id
+    username = update.message.from_user.username
 
     # Verificando se o usuário está cadastrado na planilha
     if username not in get_usernames_from_spreadsheet():
@@ -205,13 +234,19 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         message_text = update.message.text
         if message_text == "vagas" or message_text == "Vagas":
             # Verificando se há vagas novas
-            vagas_novas = vagas_novas(raspar_vagas())
+            vagas_novas = get_vagas_novas()
           
             # Enviando as vagas novas para o usuário
             message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
             context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
+
+
+# Agendando o envio de vagas
+scheduler = BackgroundScheduler()
+scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
+scheduler.start()
 
 
 if __name__ == "__main__":
@@ -235,8 +270,3 @@ if __name__ == "__main__":
         app.run(host='0.0.0.0', port=port)
     else:
         app.run(debug=True)
-
-    # Agendando o envio de vagas
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
-    scheduler.start()
