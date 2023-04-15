@@ -27,10 +27,6 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-import asyncio
-import os
-from telegram.ext import Updater, CommandHandler
-
 
 # Definindo a função async
 async def set_webhook():
@@ -39,7 +35,6 @@ async def set_webhook():
     bot = Updater(bot_token, use_context=True).bot
     webhook_url = f'{app_url}/{bot_token}'
     return await bot.set_webhook(url=webhook_url)
-
   
 # Chamando a função com asyncio.run()
 asyncio.run(set_webhook())
