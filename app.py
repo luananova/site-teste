@@ -28,7 +28,7 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 bot = Bot(token=TELEGRAM_API_KEY)
-asyncio.run(bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot')
+asyncio.run(bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot'))
 
 dispatcher = Dispatcher(bot, None, workers=0)
 
