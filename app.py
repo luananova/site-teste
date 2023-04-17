@@ -11,8 +11,8 @@ from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, jsonify, render_template_string
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from telegram import Bot, Update, ForceReply, Dispatcher
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
+from telegram import Bot, Update, ForceReply
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, Dispatcher
 
 TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
@@ -27,12 +27,24 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-bot = Bot(token=TELEGRAM_API_KEY)
-asyncio.run(bot.set_webhook(url='https://site-teste-luana.onrender.com/telegram-bot'))
+# Definindo a função async
+async def set_webhook():
+    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
+    bot_token = os.getenv('TELEGRAM_API_KEY')
+    bot = Updater(bot_token, use_context=True).bot
+    webhook_url = f'{app_url}/{bot_token}'
+    return await bot.set_webhook(url=webhook_url)
 
-dispatcher = Dispatcher(bot, None, workers=0)
-
+# Criando a rota da aplicação Flask
 app = Flask(__name__)
+
+# Chamando a função com asyncio.run()
+asyncio.run(set_webhook())
+
+# Criando o dispatcher para o bot
+bot_token = os.getenv('TELEGRAM_API_KEY')
+bot = Bot(token=bot_token)
+dispatcher = Dispatcher(bot, None, workers=0)
 
 
 def raspar_vagas():
@@ -260,14 +272,13 @@ def webhook():
     update = telegram.Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return 'ok'
-
+  
+# Adicionando o handler ao dispatcher
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
   
 if __name__ == "__main__":
-    # Finalmente, o BOT
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
-    # Iniciando a aplicação
+    # Inicializando o servidor
     if 'DYNO' in os.environ:
         port = int(os.environ.get('PORT', 5000))
         app.run(host='0.0.0.0', port=port)
