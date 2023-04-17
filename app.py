@@ -3,6 +3,7 @@ import requests
 import telegram
 import shutil
 import asyncio
+import logging
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -27,25 +28,15 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-# Definindo a função async
-async def set_webhook():
-    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
-    bot_token = os.getenv('TELEGRAM_API_KEY')
-    bot = Updater(bot_token, use_context=True).bot
-    webhook_url = f'{app_url}/{bot_token}'
-    return bot.set_webhook(url=webhook_url)
-
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
 
-# Chamando a função com asyncio.run()
-asyncio.run(set_webhook())
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # Criando o dispatcher para o bot
 bot_token = os.getenv('TELEGRAM_API_KEY')
 bot = Bot(token=bot_token)
 dispatcher = Dispatcher(bot, None, workers=0)
-
 
 def raspar_vagas():
     link = 'https://workingincontent.com/content-jobs/'
@@ -257,6 +248,8 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
 
+dispatcher.add_handler(CommandHandler('start', start))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
 # Agendando o envio de vagas
 scheduler = BackgroundScheduler()
@@ -272,6 +265,18 @@ def webhook():
     update = telegram.Update.de_json(request.get_json(force=True), bot)
     dispatcher.process_update(update)
     return 'ok'
+  
+# Definindo a função async
+async def set_webhook():
+    bot_token = os.getenv('TELEGRAM_API_KEY')
+    bot = Updater(bot_token, use_context=True).bot
+    bot.delete_webhook()
+    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
+    webhook_url = f'{app_url}/{bot_token}'
+    return bot.set_webhook(url=webhook_url)
+
+# Chamando a função com asyncio.run()
+asyncio.run(set_webhook())
   
 # Adicionando o handler ao dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
