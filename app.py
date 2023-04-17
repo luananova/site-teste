@@ -271,9 +271,7 @@ dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_me
 
 # Agendando o envio de vagas
 scheduler = BackgroundScheduler()
-scheduler.add_job(agendar_envio_vagas, trigger='interval', days=7)
 scheduler.start()
-
 
 # Configurando o webhook
 app.config.from_object(__name__)
