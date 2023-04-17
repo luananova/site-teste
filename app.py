@@ -33,7 +33,7 @@ async def set_webhook():
     bot_token = os.getenv('TELEGRAM_API_KEY')
     bot = Updater(bot_token, use_context=True).bot
     webhook_url = f'{app_url}/{bot_token}'
-    return await bot.set_webhook(url=webhook_url)
+    return bot.set_webhook(url=webhook_url)
 
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
