@@ -267,7 +267,7 @@ def webhook():
     return 'ok'
   
 # Definindo a função async
-async def set_webhook():
+def set_webhook():
     bot_token = os.getenv('TELEGRAM_API_KEY')
     bot = Updater(bot_token, use_context=True).bot
     bot.delete_webhook()
