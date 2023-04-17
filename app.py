@@ -4,6 +4,7 @@ import telegram
 import shutil
 import asyncio
 import logging
+import datetime
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -62,11 +63,12 @@ def raspar_vagas():
         vagas_separadas.append(' '.join(lista_interna))
 
     vagas_final = '\n'.join(vagas_separadas)
-    return vagas_final
 
     # Salvando as vagas da semana atual
-    with open("vagas_da_semana.txt", "w") as f:
-        f.write(vagas_final)
+    with open('vagas_da_semana.txt', 'w') as f:
+        for item in vagas_final:
+            f.write("%s\n" % item)
+    return vagas_final
         
 def get_chat_id_by_username(username):
     rows = sheet.get_all_values()
@@ -81,9 +83,9 @@ def get_chat_ids():
     for row in rows[1:]:
         chat_ids.append(row[0])  # Adiciona o chat_id à lista
     return chat_ids
-        
     
-def enviar_vagas():
+    
+def enviar_vagas(bot: Bot):
     try:
         # Lê vagas da semana atual
         with open("vagas_da_semana.txt", "r") as f:
@@ -91,21 +93,20 @@ def enviar_vagas():
 
         # Lê vagas da semana anterior
         try:
-           with open("vagas_semana_anterior.txt", "r") as f:
-               vagas_semana_anterior = f.read().splitlines()
+            with open("vagas_semana_anterior.txt", "r") as f:
+                vagas_semana_anterior = f.read().splitlines()
         except FileNotFoundError:
-             vagas_semana_anterior = []
+            vagas_semana_anterior = []
 
         # Compara as vagas da semana atual com as da semana anterior
         vagas_novas = []
         for vaga in vagas_semana_atual:
-          if hashlib.sha256(vaga.encode('utf-8')).hexdigest() not in [hashlib.sha256(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
-            vagas_novas.append(vaga)
+            if hashlib.sha256(vaga.encode('utf-8')).hexdigest() not in [hashlib.sha256(v.encode('utf-8')).hexdigest() for v in vagas_semana_anterior]:
+                vagas_novas.append(vaga)
 
-        # Verfica se há vagas novas e envia as mensagens apropriadas para os usuários cadastrados na planilha
+        # Verifica se há vagas novas e envia as mensagens apropriadas para os usuários cadastrados na planilha
         for row in sheet.get_all_values()[1:]:
-            username = row[1]
-            chat_id = get_chat_id_by_username(username)  # Obtém o chat_id usando o username
+            chat_id = row[2]  # Obtém o chat_id a partir da planilha
             if vagas_novas:
                 vagas_texto = "\n\n".join(vagas_novas)
                 bot.send_message(chat_id=chat_id, text=f"Olá! Seguem as vagas novas desta semana:\n\n{vagas_texto}")
@@ -117,13 +118,25 @@ def enviar_vagas():
         print(str(e))
         
     shutil.move("vagas_da_semana.txt", "vagas_semana_anterior.txt")  # Movendo os arquivos para que possamos compará-los semana a semana
-
+    
+# Configurando o webhook do Telegram
+def set_webhook():
+    bot_token = os.getenv('TELEGRAM_API_KEY')
+    bot = Updater(bot_token, use_context=True).bot
+    bot.delete_webhook()
+    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
+    webhook_url = f'{app_url}/{bot_token}'
+    return bot.set_webhook(url=webhook_url)
   
-def agendar_envio_vagas():
-    # Chama as funções para raspar as vagas e enviar para os usuários
-    raspar_vagas()
-    enviar_vagas()
+  
+def agendar_raspagem():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(raspar_vagas, 'interval', weeks=1)
+    scheduler.add_job(lambda: enviar_vagas(bot), trigger="interval", days=7, start_date=datetime.datetime.now())
+    scheduler.start()
 
+agendar_raspagem()
+set_webhook()
     
 # Criando a parte visual com HTML
 
@@ -273,33 +286,11 @@ def webhook():
     except TelegramError as e:
         app.logger.error(f'Error handling update: {e}')
     return 'ok'
-  
-# Definindo a função async
-def set_webhook():
-    bot_token = os.getenv('TELEGRAM_API_KEY')
-    bot = Updater(bot_token, use_context=True).bot
-    bot.delete_webhook()
-    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
-    webhook_url = f'{app_url}/{bot_token}'
-    return bot.set_webhook(url=webhook_url)
-
-# Chamando a função com asyncio.run()
-asyncio.run(set_webhook())
+ 
   
 # Adicionando o handler ao dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
-# Definindo a rota para agendar a raspagem e envio das vagas
-@app.route('/agendar-raspagem')
-def agendar_raspagem():
-    try:
-        raspar_vagas()
-        enviar_vagas()
-        return 'Raspagem agendada com sucesso!'
-    except Exception as e:
-        app.logger.error(str(e))
-        return 'Erro ao agendar a raspagem: ' + str(e), 500
 
 if __name__ == "__main__":
     # Inicializando o servidor
@@ -307,4 +298,4 @@ if __name__ == "__main__":
         port = int(os.environ.get('PORT', 5000))
         app.run(host='0.0.0.0', port=port)
     else:
-        app.run(debug=True)
+        app.run(debug=True, use_reloader=False)
