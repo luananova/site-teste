@@ -14,6 +14,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 from telegram import Bot, Update, ForceReply
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, Dispatcher, Filters
+from telegram.error import TelegramError
 
 TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
@@ -67,6 +68,21 @@ def raspar_vagas():
     with open("vagas_da_semana.txt", "w") as f:
         f.write(vagas_final)
         
+def get_chat_id_by_username(username):
+    rows = sheet.get_all_values()
+    for row in rows[1:]:
+        if row[1] == username:
+            return row[0]  # Retorna o chat_id associado ao username
+    return None
+
+def get_chat_ids():
+    chat_ids = []
+    rows = sheet.get_all_values()
+    for row in rows[1:]:
+        chat_ids.append(row[0])  # Adiciona o chat_id à lista
+    return chat_ids
+        
+    
 def enviar_vagas():
     try:
         # Lê vagas da semana atual
@@ -89,17 +105,18 @@ def enviar_vagas():
         # Verfica se há vagas novas e envia as mensagens apropriadas para os usuários cadastrados na planilha
         for row in sheet.get_all_values()[1:]:
             username = row[1]
+            chat_id = get_chat_id_by_username(username)  # Obtém o chat_id usando o username
             if vagas_novas:
                 vagas_texto = "\n\n".join(vagas_novas)
-                bot.send_message(chat_id=username, text=f"Olá! Seguem as vagas novas desta semana:\n\n{vagas_texto}")
+                bot.send_message(chat_id=chat_id, text=f"Olá! Seguem as vagas novas desta semana:\n\n{vagas_texto}")
             else:
-                bot.send_message(chat_id=username, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
+                bot.send_message(chat_id=chat_id, text="Não há vagas novas nesta semana. Mas não desanima, o que é teu tá guardado.")
 
     except Exception as e:
         bot.send_message(chat_id=TELEGRAM_ADMIN_ID, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
         
-    shutil.move("vagas_da_semana.txt", "vagas_semana_anterior.txt") # Movendo os arquivos para que possamos compará-los semana a semana
+    shutil.move("vagas_da_semana.txt", "vagas_semana_anterior.txt")  # Movendo os arquivos para que possamos compará-los semana a semana
 
   
 def agendar_envio_vagas():
@@ -207,42 +224,30 @@ def get_vagas_novas():
             vagas_novas.append(vaga)
 
     return vagas_novas
-
   
 def start(update: Update, context: CallbackContext) -> None:
-    # Obtendo o chat_id do usuário que enviou a mensagem
     chat_id = update.message.chat_id
     username = update.message.from_user.username
-    
-    # Mensagem de boas-vindas e opções de ação para usuários cadastrados
+
     if username in get_usernames_from_spreadsheet():
         context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Para ver as vagas disponíveis, envie 'vagas'.")
-        
-    # Mensagem para usuários não cadastrados
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
         context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Se inscreva para receber vagas em Conteúdo semanalmente.", reply_markup=reply_markup)
-      
-      
+
 def handle_message(update: Update, context: CallbackContext) -> None:
-    # Obtendo o chat_id do usuário que enviou a mensagem
     chat_id = update.message.chat_id
     username = update.message.from_user.username
 
-    # Verificando se o usuário está cadastrado na planilha
-    if username not in get_usernames_from_spreadsheet():
+    if chat_id not in get_chat_ids():
         context.bot.send_message(chat_id=update.effective_chat.id, text="Você ainda não está cadastrado para receber vagas. Cadastre-se no site para começar a receber!")
     else:
-        # Verificando se o usuário enviou alguma mensagem
         if not update.message:
             return
 
         message_text = update.message.text
         if message_text == "vagas" or message_text == "Vagas":
-            # Verificando se há vagas novas
             vagas_novas = get_vagas_novas()
-          
-            # Enviando as vagas novas para o usuário
             message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
             context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
         else:
@@ -262,8 +267,11 @@ app.config.from_object(__name__)
 
 @app.route('/telegram-bot', methods=['POST'])
 def webhook():
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+    try:
+        update = Update.de_json(request.get_json(force=True), bot)
+        dispatcher.process_update(update)
+    except TelegramError as e:
+        app.logger.error(f'Error handling update: {e}')
     return 'ok'
   
 # Definindo a função async
@@ -281,7 +289,18 @@ asyncio.run(set_webhook())
 # Adicionando o handler ao dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-  
+
+# Definindo a rota para agendar a raspagem e envio das vagas
+@app.route('/agendar-raspagem')
+def agendar_raspagem():
+    try:
+        raspar_vagas()
+        enviar_vagas()
+        return 'Raspagem agendada com sucesso!'
+    except Exception as e:
+        app.logger.error(str(e))
+        return 'Erro ao agendar a raspagem: ' + str(e), 500
+
 if __name__ == "__main__":
     # Inicializando o servidor
     if 'DYNO' in os.environ:
