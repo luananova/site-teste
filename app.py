@@ -237,8 +237,8 @@ def get_vagas_novas():
     return vagas_novas
 
 def start(update: Update, context: CallbackContext):
-    chat_id = update.message.chat_id
     username = update.message.from_user.username
+    chat_id = update.effective_chat.id
 
     row_index = get_chat_id_by_username(username)
     if row_index:
@@ -249,8 +249,8 @@ def start(update: Update, context: CallbackContext):
         context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Se inscreva para receber vagas em Conteúdo semanalmente.", reply_markup=reply_markup)
 
 def handle_message(update: Update, context: CallbackContext):
-    chat_id = update.message.chat_id
     username = update.message.from_user.username
+    chat_id = update.effective_chat.id
 
     if get_chat_id_by_username(username) is None:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
