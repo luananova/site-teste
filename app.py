@@ -38,7 +38,7 @@ app.config.from_object(__name__)
 
 # Configurando o bot e o dispatcher
 bot = Bot(token=TELEGRAM_API_KEY)
-dispatcher = Dispatcher(bot, None, workers=0)
+dispatcher = Dispatcher(bot, None, workers=2)
 
 def raspar_vagas():
     link = 'https://workingincontent.com/content-jobs/'
