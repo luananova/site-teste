@@ -292,8 +292,4 @@ dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_me
 
 if __name__ == "__main__":
     # Inicializando o servidor
-    if 'DYNO' in os.environ:
-        port = int(os.environ.get('PORT', 5000))
-        app.run(host='0.0.0.0', port=port)
-    else:
-        app.run(debug=True, use_reloader=False)
+    app.run(debug=True, use_reloader=False)
