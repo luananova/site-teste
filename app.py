@@ -162,7 +162,7 @@ inscrever_html = """
 sucesso_html = """
 <html>
   <body>
-    <h1>Sucesso!</h1>
+    <h1>Legal, agora é só enviar uma mensagem para finalizar seu cadastro!</h1>
     <p>{{message}}</p>
   </body>
 </html>
@@ -199,7 +199,7 @@ def inscrever():
             row = [name, username]
             sheet.append_row(row)
 
-            return menu + render_template_string(sucesso_html, message="Se prepare para receber vaguinhas de um jeito prático semanalmente.")
+            return menu + render_template_string(sucesso_html, message="É só <a href="https://t.me/robo_de_lua_bot">acessar o bot</a>, mandar um Oi e aguardar as vagas! ;)")
 
         return menu + render_template_string(inscrever_html, title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente. Vou enviar as mensagens pra você pelo Telegram @robo_de_lua_bot.")
 
