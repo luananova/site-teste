@@ -69,17 +69,11 @@ def raspar_vagas():
         for item in vagas_final:
             f.write("%s\n" % item)
     return vagas_final
-  
-def get_chat_id_by_username(username):
-    rows = sheet.get_all_values()
-    for index, row in enumerate(rows[1:], start=2):  # Começa a contar a partir da linha 2, ignorando o cabeçalho
-        if row[1] == username:
-            return index  # Retorna o índice da linha onde o username foi encontrado
-    return None
-  
-def update_chat_id(row_index, chat_id):
-    sheet.update_cell(row_index, 3, chat_id)  # Atualiza a coluna 3 (chat_id) da linha especificada
 
+def get_usernames_from_spreadsheet():
+    usernames_cadastrados = sheet.col_values(2)[1:]
+    return usernames_cadastrados   
+  
 def get_chat_ids():
     chat_ids = []
     rows = sheet.get_all_values()
@@ -214,10 +208,22 @@ def inscrever():
 
       
 # Lidando com as mensagerias no Telegram
-
-def get_usernames_from_spreadsheet():
-    usernames_cadastrados = sheet.col_values(2)[1:]
-    return usernames_cadastrados  
+def get_chat_id_by_username(username):
+    rows = sheet.get_all_values()
+    for index, row in enumerate(rows[1:], start=2):  # Começa a contar a partir da linha 2, ignorando o cabeçalho
+        if row[1] == username:
+            return index  # Retorna o índice da linha onde o username foi encontrado
+    return None
+  
+def update_chat_id(row_index, chat_id):
+    sheet.update_cell(row_index, 3, chat_id)  # Atualiza a coluna 3 (chat_id) da linha especificada
+  
+def get_name_by_username(username):
+    rows = sheet.get_all_values()
+    for row in rows[1:]:
+        if row[1] == username:
+            return row[0]  # Retorna o nome na primeira coluna
+    return None
   
 def get_vagas_novas():
     try:
@@ -242,8 +248,12 @@ def start(update: Update, context: CallbackContext):
 
     row_index = get_chat_id_by_username(username)
     if row_index:
-        update_chat_id(row_index, chat_id)  # Atualiza o chat_id na planilha
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Para ver as vagas disponíveis, envie 'vagas'.")
+        name = get_name_by_username(username)
+        if sheet.cell(row_index, 3).value:  # Verifica se o chat_id já está na planilha
+            context.bot.send_message(chat_id=update.effective_chat.id, text=f"Oi de novo, {name}! Aguarde as novas mensagens ou envie 'vagas' para conferir se há atualizações.")
+        else:
+            update_chat_id(row_index, chat_id)  # Atualiza o chat_id na planilha
+            context.bot.send_message(chat_id=update.effective_chat.id, text="Valeu, deu tudo certo! Agora é só aguardar as vagas de conteúdo nas suas mensagens.")
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
         context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Se inscreva para receber vagas em Conteúdo semanalmente.", reply_markup=reply_markup)
@@ -252,21 +262,23 @@ def handle_message(update: Update, context: CallbackContext):
     username = update.message.from_user.username
     chat_id = update.effective_chat.id
 
-    if get_chat_id_by_username(username) is None:
-        reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
-        context.bot.send_message(chat_id=update.effective_chat.id, text="Você ainda não está cadastrado para receber vagas. Cadastre-se no site para começar a receber!", reply_markup=reply_markup)
-    else:
-        if not update.message:
-            return
-
-        message_text = update.message.text
-        if message_text == "vagas" or message_text == "Vagas":
-            vagas_novas = get_vagas_novas()
-            message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
+    row_index = get_chat_id_by_username(username)
+    if row_index:
+        name = get_name_by_username(username)
+        if sheet.cell(row_index, 3).value:  # Verifica se o chat_id já está na planilha
+            message_text = update.message.text.lower()
+            if message_text == "vagas":
+                vagas_novas = get_vagas_novas()
+                message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
+                context.bot.send_message(chat_id=chat_id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
+            else:
+                context.bot.send_message(chat_id=chat_id, text=f"Oi de novo, {name}! Aguarde as novas mensagens ou envie 'vagas' para conferir se há atualizações.")
         else:
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")        
-        
+            update_chat_id(row_index, chat_id)  # Atualiza o chat_id na planilha
+            context.bot.send_message(chat_id=chat_id, text="Valeu, deu tudo certo! Agora é só aguardar as vagas de conteúdo nas suas mensagens.")
+    else:
+        reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
+        context.bot.send_message(chat_id=chat_id, text="Você ainda não está cadastrado para receber vagas. Cadastre-se no site para começar a receber!", reply_markup=reply_markup)      
 
 # Adicionando o handler ao dispatcher
 dispatcher.run_async = True
