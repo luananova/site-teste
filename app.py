@@ -122,7 +122,6 @@ def enviar_vagas(bot: Bot):
 def set_webhook():
     bot_token = os.getenv('TELEGRAM_API_KEY')
     bot = Updater(bot_token, use_context=True).bot
-    bot.delete_webhook()
     app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
     webhook_url = f'{app_url}:{os.getenv("PORT")}/{bot_token}'
     return bot.set_webhook(url=webhook_url)  
@@ -267,9 +266,7 @@ def handle_message(update: Update, context: CallbackContext):
 # Adicionando o handler ao dispatcher
 dispatcher.run_async = True
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)            
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))  
 
 # Agendando o envio de vagas
 scheduler = BackgroundScheduler()
@@ -283,4 +280,4 @@ def webhook_handler():
     return 'ok'
 
 if __name__ == '__main__':
-    app.run(port=int(os.environ.get('PORT', 5000)))
+    app.run
