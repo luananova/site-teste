@@ -235,7 +235,7 @@ def get_vagas_novas():
 
     return vagas_novas
   
-def start(update: Update, context: CallbackContext) -> None:
+def start(update: Update, context: CallbackContext):
     chat_id = update.message.chat_id
     username = update.message.from_user.username
 
@@ -245,7 +245,7 @@ def start(update: Update, context: CallbackContext) -> None:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
         context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Se inscreva para receber vagas em Conteúdo semanalmente.", reply_markup=reply_markup)
 
-def handle_message(update: Update, context: CallbackContext) -> None:
+def handle_message(update: Update, context: CallbackContext):
     chat_id = update.message.chat_id
     username = update.message.from_user.username
 
@@ -264,6 +264,7 @@ def handle_message(update: Update, context: CallbackContext) -> None:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
 
 # Adicionando o handler ao dispatcher
+dispatcher.run_async = True
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
