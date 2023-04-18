@@ -198,8 +198,9 @@ def inscrever():
             # Inserindo nova linha na planilha com as informações do novo usuário
             row = [name, username]
             sheet.append_row(row)
+            
+            return menu + render_template_string(sucesso_html, message='É só <a href="https://t.me/robo_de_lua_bot">acessar o bot</a>, mandar um Oi e aguardar as vagas! ;)')
 
-            return menu + render_template_string(sucesso_html, message="É só <a href="https://t.me/robo_de_lua_bot">acessar o bot</a>, mandar um Oi e aguardar as vagas! ;)")
 
         return menu + render_template_string(inscrever_html, title="Quer receber vagas de Content semanalmente?", subtitle="Inscreva-se e receba as vagas mais interessantes do mercado semanalmente. Vou enviar as mensagens pra você pelo Telegram @robo_de_lua_bot.")
 
