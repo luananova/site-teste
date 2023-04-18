@@ -32,6 +32,8 @@ sheet = planilha.worksheet('Subscribers')
 
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
+# Configurando o webhook
+app.config.from_object(__name__)
 
 # Configurando o bot e o dispatcher
 bot = Bot(token=TELEGRAM_API_KEY)
@@ -122,9 +124,8 @@ def set_webhook():
     bot = Updater(bot_token, use_context=True).bot
     bot.delete_webhook()
     app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
-    webhook_url = f'{app_url}/{bot_token}'
-    return bot.set_webhook(url=webhook_url)
-  
+    webhook_url = f'{app_url}:{os.getenv("PORT")}/{bot_token}'
+    return bot.set_webhook(url=webhook_url)  
   
 def agendar_raspagem():
     scheduler = BackgroundScheduler()
@@ -274,9 +275,6 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-# Configurando o webhook
-app.config.from_object(__name__)
-
 @app.route('/telegram-bot', methods=['POST'])
 def webhook_handler():
     if request.method == "POST":
@@ -285,4 +283,4 @@ def webhook_handler():
     return 'ok'
 
 if __name__ == '__main__':
-    app.run(port=443)
+    app.run(port=int(os.environ.get('PORT', 5000)))
