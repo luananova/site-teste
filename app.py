@@ -5,6 +5,7 @@ import shutil
 import asyncio
 import logging
 import datetime
+import hashlib
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
@@ -272,7 +273,7 @@ dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_me
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-@app.route('/telegram-bot', methods=['POST'])
+@app.route(f'/{TELEGRAM_API_KEY}', methods=['POST'])
 def webhook_handler():
     if request.method == "POST":
         update = Update.de_json(request.get_json(force=True), bot)
@@ -280,4 +281,4 @@ def webhook_handler():
     return 'ok'
 
 if __name__ == '__main__':
-    app.run
+    app.run(port=int(os.getenv("PORT", 5000)))
