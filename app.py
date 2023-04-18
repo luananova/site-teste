@@ -39,6 +39,9 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 bot_token = os.getenv('TELEGRAM_API_KEY')
 bot = Bot(token=bot_token)
 dispatcher = Dispatcher(bot, None, workers=0)
+# Adicionando o handler ao dispatcher
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
 def raspar_vagas():
     link = 'https://workingincontent.com/content-jobs/'
@@ -266,9 +269,6 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
 
-dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
-
 # Agendando o envio de vagas
 scheduler = BackgroundScheduler()
 scheduler.start()
@@ -284,11 +284,6 @@ def webhook():
     except TelegramError as e:
         app.logger.error(f'Error handling update: {e}')
     return 'ok'
- 
-  
-# Adicionando o handler ao dispatcher
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
 if __name__ == "__main__":
     # Inicializando o servidor
