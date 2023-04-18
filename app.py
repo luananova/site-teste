@@ -272,7 +272,7 @@ dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_me
 scheduler = BackgroundScheduler()
 scheduler.start()
 
-@app.route('/telegram-bot', methods=['POST'])
+@app.route(f'/telegram-bot/{TELEGRAM_API_KEY}', methods=['POST'])
 def webhook_handler():
     if request.method == "POST":
         update = Update.de_json(request.get_json(force=True), bot)
