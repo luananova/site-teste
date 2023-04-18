@@ -33,15 +33,9 @@ sheet = planilha.worksheet('Subscribers')
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
 
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-
-# Criando o dispatcher para o bot
-bot_token = os.getenv('TELEGRAM_API_KEY')
-bot = Bot(token=bot_token)
+# Configurando o bot e o dispatcher
+bot = Bot(token=TELEGRAM_API_KEY)
 dispatcher = Dispatcher(bot, None, workers=0)
-# Adicionando o handler ao dispatcher
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
 def raspar_vagas():
     link = 'https://workingincontent.com/content-jobs/'
@@ -269,6 +263,12 @@ def handle_message(update: Update, context: CallbackContext) -> None:
         else:
             context.bot.send_message(chat_id=update.effective_chat.id, text="Desculpe, não entendi o que você quis dizer. Por favor, envie 'vagas' para ver as vagas disponíveis.")
 
+# Adicionando o handler ao dispatcher
+dispatcher.add_handler(CommandHandler("start", start))
+dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)            
+
 # Agendando o envio de vagas
 scheduler = BackgroundScheduler()
 scheduler.start()
@@ -277,14 +277,11 @@ scheduler.start()
 app.config.from_object(__name__)
 
 @app.route('/telegram-bot', methods=['POST'])
-def webhook():
-    try:
+def webhook_handler():
+    if request.method == "POST":
         update = Update.de_json(request.get_json(force=True), bot)
         dispatcher.process_update(update)
-    except TelegramError as e:
-        app.logger.error(f'Error handling update: {e}')
     return 'ok'
 
-if __name__ == "__main__":
-    # Inicializando o servidor
-    app.run(debug=True, use_reloader=False)
+if __name__ == '__main__':
+    app.run(debug=True)
