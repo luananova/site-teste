@@ -121,10 +121,9 @@ def enviar_vagas(bot: Bot):
     
 # Configurando o webhook do Telegram
 def set_webhook():
-    bot_token = os.getenv('TELEGRAM_API_KEY')
-    bot = Updater(bot_token, use_context=True).bot
-    app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
-    webhook_url = f'{app_url}:{os.getenv("PORT")}/{bot_token}'
+    bot = Updater(TELEGRAM_API_KEY, use_context=True).bot
+    app_url = 'https://site-teste-luana.onrender.com/{TELEGRAM_API_KEY}'
+    webhook_url = f'{app_url}:{os.getenv("PORT")}'
     return bot.set_webhook(url=webhook_url)  
   
 def agendar_raspagem():
