@@ -32,8 +32,8 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-# Use as mesmas credenciais da conta de serviço para criar um cliente do Google Cloud Storage
-client = storage.Client.from_service_account_json("credenciais.json")
+# Usando as mesmas credenciais da conta de serviço para criar um cliente do Google Cloud Storage
+client = storage.Client(credentials=conta)
 
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
