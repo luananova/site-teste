@@ -23,21 +23,23 @@ TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
 TELEGRAM_BOT_ID = os.environ["TELEGRAM_BOT_ID"]
 
+GOOGLE_CLOUD_CREDENTIALS = os.environ["GOOGLE_CLOUD_CREDENTIALS"]
+
 GOOGLE_SHEETS_CREDENTIALS = os.environ["GOOGLE_SHEETS_CREDENTIALS"]
 with open("credenciais.json", mode="w") as arquivo:
   arquivo.write(GOOGLE_SHEETS_CREDENTIALS)
   
-conta = ServiceAccountCredentials.from_json_keyfile_name("credenciais.json", scopes=[
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/devstorage.read_write'
-])
-  
+conta = ServiceAccountCredentials.from_json_keyfile_name("credenciais.json")  
 api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-# Usando as mesmas credenciais da conta de serviço para criar um cliente do Google Cloud Storage
-client = storage.Client(credentials=conta)
+# Convertendo a string JSON em um objeto Python
+credentials_dict = json.loads(GOOGLE_CLOUD_CREDENTIALS)
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict)
+
+# Criando o cliente do Google Cloud Storage
+client = storage.Client(credentials=credentials)
 
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
