@@ -243,43 +243,64 @@ def get_vagas_novas():
 
     return vagas_novas
 
+
 def start(update: Update, context: CallbackContext):
+    first_name = update.message.from_user.first_name
     username = update.message.from_user.username
     chat_id = update.effective_chat.id
 
-    row_index = get_chat_id_by_username(username)
-    if row_index:
-        name = get_name_by_username(username)
-        if sheet.cell(row_index, 3).value:  # Verifica se o chat_id já está na planilha
-            context.bot.send_message(chat_id=update.effective_chat.id, text=f"Oi de novo, {name}! Aguarde as novas mensagens ou envie 'vagas' para conferir se há atualizações.")
+    # Verificando se o usuário já está cadastrado
+    rows = sheet.get_all_values()
+    user_exists = False
+    row_number = 0
+    for row in rows:
+        row_number += 1
+        if first_name in row and username in row:
+            user_exists = True
+            break
+
+    if user_exists:
+        # Verificando se o chat_id já está registrado
+        if str(chat_id) == row[row_number - 1][2]:
+            context.bot.send_message(chat_id=chat_id, text=f"Olá, {first_name}! Seu cadastro já foi realizado. Envie 'vagas' para ver as oportunidades disponíveis ou aguarde novas atualizações.")
         else:
-            update_chat_id(row_index, chat_id)  # Atualiza o chat_id na planilha
-            context.bot.send_message(chat_id=update.effective_chat.id, text="Valeu, deu tudo certo! Agora é só aguardar as vagas de conteúdo nas suas mensagens.")
+            # Atualizando o chat_id na planilha
+            sheet.update_cell(row_number, 3, chat_id)
+            context.bot.send_message(chat_id=chat_id, text=f"Olá, {first_name}! Tudo certo com seu cadastro! Envie 'vagas' para ver as oportunidades disponíveis ou aguarde novas atualizações.")
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
         context.bot.send_message(chat_id=update.effective_chat.id, text="Olá! Se inscreva para receber vagas em Conteúdo semanalmente.", reply_markup=reply_markup)
 
 def handle_message(update: Update, context: CallbackContext):
+    first_name = update.message.from_user.first_name
     username = update.message.from_user.username
     chat_id = update.effective_chat.id
 
-    row_index = get_chat_id_by_username(username)
-    if row_index:
-        name = get_name_by_username(username)
-        if sheet.cell(row_index, 3).value:  # Verifica se o chat_id já está na planilha
+    # Verificando se o usuário já está cadastrado
+    rows = sheet.get_all_values()
+    user_exists = False
+    row_number = 0
+    for row in rows:
+        row_number += 1
+        if first_name in row and username in row:
+            user_exists = True
+            break
+
+    if user_exists:
+        if sheet.cell(row_number, 3).value:  # Verifica se o chat_id já está na planilha
             message_text = update.message.text.lower()
             if message_text == "vagas":
                 vagas_novas = get_vagas_novas()
                 message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
                 context.bot.send_message(chat_id=chat_id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
             else:
-                context.bot.send_message(chat_id=chat_id, text=f"Oi de novo, {name}! Aguarde as novas mensagens ou envie 'vagas' para conferir se há atualizações.")
+                context.bot.send_message(chat_id=chat_id, text=f"Oi de novo, {first_name}! Aguarde as novas mensagens ou envie 'vagas' para conferir se há atualizações.")
         else:
-            update_chat_id(row_index, chat_id)  # Atualiza o chat_id na planilha
-            context.bot.send_message(chat_id=chat_id, text="Valeu, deu tudo certo! Agora é só aguardar as vagas de conteúdo nas suas mensagens.")
+            sheet.update_cell(row_number, 3, chat_id)  # Atualiza o chat_id na planilha
+            context.bot.send_message(chat_id=chat_id, text="Valeu, deu tudo certo! Agora é só aguardar as vagas de conteúdo chegarem semanalmente por aqui.")
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
-        context.bot.send_message(chat_id=chat_id, text="Você ainda não está cadastrado para receber vagas. Cadastre-se no site para começar a receber!", reply_markup=reply_markup)      
+        context.bot.send_message(chat_id=chat_id, text="Você ainda não se cadastrou para receber vagas. Se inscreva no site para começar a receber!", reply_markup=reply_markup)      
 
 # Adicionando o handler ao dispatcher
 dispatcher.run_async = True
