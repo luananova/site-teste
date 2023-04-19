@@ -149,7 +149,7 @@ inscrever_html = """
         <input type="text" class="form-control" id="name" name="name" required>
       </div>
       <div class="form-group">
-        <label for="username">Seu usuário do Telegram (com o '@')</label>
+        <label for="username">Seu usuário do Telegram (sem o '@')</label>
         <input type="text" class="form-control" id="username" name="username" required>
       </div>
       <button type="submit" class="btn btn-primary">Quero vaguinhas</button>
