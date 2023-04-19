@@ -75,8 +75,7 @@ def raspar_vagas():
     return vagas_final
   
 # Salvando as raspagens no Google Cloud Storage
-def upload_to_gcs(bucket_name, vagas_final):
-  client = storage.Client()
+def upload_to_gcs(bucket_name, vagas_final, client):
   bucket = client.get_bucket(bucket_name)
   blob_name = "vagas_da_semana.txt"
   my_data = vagas_final
@@ -86,7 +85,7 @@ def upload_to_gcs(bucket_name, vagas_final):
 
 vagas_final = raspar_vagas()
 bucket_name = "vagas"
-upload_to_gcs(bucket_name, vagas_final)
+upload_to_gcs(bucket_name, vagas_final, client)
 
 def get_usernames_from_spreadsheet():
     usernames_cadastrados = sheet.col_values(2)[1:]
@@ -99,8 +98,7 @@ def get_chat_ids():
         chat_ids.append(row[2])  # Adiciona o chat_id à lista, na coluna 3
     return chat_ids
 
-def download_from_gcs(bucket_name, blob_name):
-    client = storage.Client()
+def download_from_gcs(bucket_name, blob_name, client):
     bucket = client.get_bucket(bucket_name)
     blob = bucket.blob(blob_name)
     return blob.download_as_text()
@@ -108,11 +106,11 @@ def download_from_gcs(bucket_name, blob_name):
 def enviar_vagas(bot: Bot):
     try:
         # Lê vagas da semana atual
-        vagas_semana_atual = download_from_gcs("vagas", "vagas_da_semana.txt").splitlines()
+        vagas_semana_atual = download_from_gcs("vagas", "vagas_da_semana.txt", client).splitlines()
 
         # Lê vagas da semana anterior
         try:
-            vagas_semana_anterior = download_from_gcs("vagas", "vagas_semana_anterior.txt").splitlines()
+            vagas_semana_anterior = download_from_gcs("vagas", "vagas_semana_anterior.txt", client).splitlines()
         except NotFound: # google.api_core.exceptions.NotFound
             vagas_semana_anterior = []
 
@@ -136,8 +134,8 @@ def enviar_vagas(bot: Bot):
         print(str(e))
 
     # Copiando o conteúdo do blob vagas_da_semana.txt para vagas_semana_anterior.txt
-    content = download_from_gcs("vagas", "vagas_da_semana.txt")
-    upload_to_gcs("vagas", content, "vagas_semana_anterior.txt")
+    content = download_from_gcs("vagas", "vagas_da_semana.txt", client)
+    upload_to_gcs("vagas", content, "vagas_semana_anterior.txt", client)
 
 def agendar_raspagem():
     scheduler = BackgroundScheduler()
@@ -268,7 +266,7 @@ def get_vagas_novas(bucket):
 
     return vagas_novas
 
-vagas_novas = get_vagas_novas(bucket)
+vagas_novas = get_vagas_novas(bucket, client)
 
 def start(update: Update, context: CallbackContext):
     first_name = update.message.from_user.first_name
@@ -316,7 +314,7 @@ def handle_message(update: Update, context: CallbackContext):
         if sheet.cell(row_number, 3).value:  # Verifica se o chat_id já está na planilha
             message_text = update.message.text.lower()
             if message_text == "vagas":
-                vagas_novas = get_vagas_novas(bucket)
+                vagas_novas = get_vagas_novas(bucket, client)
                 message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
                 context.bot.send_message(chat_id=chat_id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
             else:
