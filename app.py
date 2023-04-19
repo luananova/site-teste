@@ -71,18 +71,18 @@ def raspar_vagas():
     return vagas_final
   
 # Salvando as raspagens no Google Cloud Storage
-def upload_to_gcs(vagas_final):
+def upload_to_gcs(bucket_name, vagas_final):
   client = storage.Client()
-  bucket_name = "vagas"
-  bucket = client.create_bucket(vagas)
+  bucket = client.get_bucket(bucket_name)
   blob_name = "vagas_da_semana.txt"
-  your_data = vagas_final
+  my_data = vagas_final
   
-  blob = bucket.blob(vagas_da_semana.txt)
-  blob.upload_from_string(vagas_final)
+  blob = bucket.blob(blob_name)
+  blob.upload_from_string(my_data)
 
 vagas_final = raspar_vagas()
-upload_to_gcs(vagas_final)
+bucket_name = "vagas"
+upload_to_gcs(bucket_name, vagas_final)
 
 def get_usernames_from_spreadsheet():
     usernames_cadastrados = sheet.col_values(2)[1:]
@@ -94,6 +94,12 @@ def get_chat_ids():
     for row in rows[1:]:
         chat_ids.append(row[2])  # Adiciona o chat_id à lista, na coluna 3
     return chat_ids
+
+def download_from_gcs(bucket_name, blob_name):
+    client = storage.Client()
+    bucket = client.get_bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    return blob.download_as_text()
   
 def enviar_vagas(bot: Bot):
     try:
@@ -127,7 +133,7 @@ def enviar_vagas(bot: Bot):
 
     # Copiando o conteúdo do blob vagas_da_semana.txt para vagas_semana_anterior.txt
     content = download_from_gcs("vagas", "vagas_da_semana.txt")
-    upload_to_gcs(content, blob_name="vagas_semana_anterior.txt")
+    upload_to_gcs("vagas", content, "vagas_semana_anterior.txt")
 
 def agendar_raspagem():
     scheduler = BackgroundScheduler()
