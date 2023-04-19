@@ -1,7 +1,6 @@
 import os
 import requests
 import telegram
-import shutil
 import asyncio
 import logging
 import datetime
@@ -9,6 +8,8 @@ import hashlib
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from google.cloud import storage
+from google.api_core.exceptions import NotFound
 
 from bs4 import BeautifulSoup
 from flask import Flask, render_template, request, jsonify, render_template_string
@@ -30,6 +31,9 @@ conta = ServiceAccountCredentials.from_json_keyfile_name("credenciais.json")
 api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
+
+# Use as mesmas credenciais da conta de serviço para criar um cliente do Google Cloud Storage
+client = storage.Client.from_service_account_json("credenciais.json")
 
 # Criando a rota da aplicação Flask
 app = Flask(__name__)
@@ -63,12 +67,22 @@ def raspar_vagas():
         vagas_separadas.append(' '.join(lista_interna))
 
     vagas_final = '\n'.join(vagas_separadas)
-
-    # Salvando as vagas da semana atual
-    with open('vagas_da_semana.txt', 'w') as f:
-        for item in vagas_final:
-            f.write("%s\n" % item)
+    
     return vagas_final
+  
+# Salvando as raspagens no Google Cloud Storage
+def upload_to_gcs(vagas_final):
+  client = storage.Client()
+  bucket_name = "vagas"
+  bucket = client.create_bucket(vagas)
+  blob_name = "vagas_da_semana.txt"
+  your_data = vagas_final
+  
+  blob = bucket.blob(vagas_da_semana.txt)
+  blob.upload_from_string(vagas_final)
+
+vagas_final = raspar_vagas()
+upload_to_gcs(vagas_final)
 
 def get_usernames_from_spreadsheet():
     usernames_cadastrados = sheet.col_values(2)[1:]
@@ -80,18 +94,16 @@ def get_chat_ids():
     for row in rows[1:]:
         chat_ids.append(row[2])  # Adiciona o chat_id à lista, na coluna 3
     return chat_ids
-    
+  
 def enviar_vagas(bot: Bot):
     try:
         # Lê vagas da semana atual
-        with open("vagas_da_semana.txt", "r") as f:
-            vagas_semana_atual = f.read().splitlines()
+        vagas_semana_atual = download_from_gcs("vagas", "vagas_da_semana.txt").splitlines()
 
         # Lê vagas da semana anterior
         try:
-            with open("vagas_semana_anterior.txt", "r") as f:
-                vagas_semana_anterior = f.read().splitlines()
-        except FileNotFoundError:
+            vagas_semana_anterior = download_from_gcs("vagas", "vagas_semana_anterior.txt").splitlines()
+        except NotFound: # google.api_core.exceptions.NotFound
             vagas_semana_anterior = []
 
         # Compara as vagas da semana atual com as da semana anterior
@@ -112,21 +124,23 @@ def enviar_vagas(bot: Bot):
     except Exception as e:
         bot.send_message(chat_id=TELEGRAM_ADMIN_ID, text="Desculpe, rolou um erro ao buscar as vagas. Guenta aí, robôzinhos também erram.")
         print(str(e))
-        
-    shutil.move("vagas_da_semana.txt", "vagas_semana_anterior.txt")  # Movendo os arquivos para que possamos compará-los semana a semana
+
+    # Copiando o conteúdo do blob vagas_da_semana.txt para vagas_semana_anterior.txt
+    content = download_from_gcs("vagas", "vagas_da_semana.txt")
+    upload_to_gcs(content, blob_name="vagas_semana_anterior.txt")
+
+def agendar_raspagem():
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(raspar_vagas, 'interval', weeks=1)
+    scheduler.add_job(lambda: enviar_vagas(bot), trigger="interval", days=7, start_date=datetime.datetime.now())
+    scheduler.start()
     
 # Configurando o webhook do Telegram
 def set_webhook():
     bot = Updater(TELEGRAM_API_KEY, use_context=True).bot
     app_url = 'https://site-teste-luana.onrender.com/telegram-bot'
     webhook_url = f'{app_url}/{TELEGRAM_API_KEY}'
-    return bot.set_webhook(url=webhook_url)  
-  
-def agendar_raspagem():
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(raspar_vagas, 'interval', weeks=1)
-    scheduler.add_job(lambda: enviar_vagas(bot), trigger="interval", days=7, start_date=datetime.datetime.now())
-    scheduler.start()
+    return bot.set_webhook(url=webhook_url)
 
 agendar_raspagem()
 set_webhook()
@@ -223,15 +237,18 @@ def get_name_by_username(username):
         if row[1] == username:
             return row[0]  # Retorna o nome na primeira coluna
     return None
-  
-def get_vagas_novas():
-    try:
-        with open("vagas_da_semana.txt", "r") as f:
-            vagas_semana_atual = f.read().splitlines()
 
-        with open("vagas_semana_anterior.txt", "r") as f:
-            vagas_semana_anterior = f.read().splitlines()
-    except FileNotFoundError:
+def get_vagas_novas(bucket):
+    # Baixar os blobs do Google Cloud Storage
+    blob_semana_atual = bucket.blob("vagas_da_semana.txt")
+    blob_semana_anterior = bucket.blob("vagas_semana_anterior.txt")
+
+    # Ler o conteúdo dos blobs
+    vagas_semana_atual = blob_semana_atual.download_as_text().splitlines()
+
+    try:
+        vagas_semana_anterior = blob_semana_anterior.download_as_text().splitlines()
+    except google.api_core.exceptions.NotFound:
         vagas_semana_anterior = []
 
     vagas_novas = []
@@ -241,6 +258,7 @@ def get_vagas_novas():
 
     return vagas_novas
 
+vagas_novas = get_vagas_novas(bucket)
 
 def start(update: Update, context: CallbackContext):
     first_name = update.message.from_user.first_name
@@ -288,7 +306,7 @@ def handle_message(update: Update, context: CallbackContext):
         if sheet.cell(row_number, 3).value:  # Verifica se o chat_id já está na planilha
             message_text = update.message.text.lower()
             if message_text == "vagas":
-                vagas_novas = get_vagas_novas()
+                vagas_novas = get_vagas_novas(bucket)
                 message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
                 context.bot.send_message(chat_id=chat_id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
             else:
