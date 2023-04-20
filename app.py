@@ -187,7 +187,7 @@ sucesso_html = """
 <html>
   <body>
     <h1>Legal, agora é só enviar uma mensagem para finalizar seu cadastro!</h1>
-    <p>É só acessar o bot {{ link_bot }}, mandar um Oi e aguardar as vagas! ;)</p>
+    <p>É só acessar o bot {{ link_bot|safe }}, mandar um Oi e aguardar as vagas! ;)</p>
   </body>
 </html>
 """
