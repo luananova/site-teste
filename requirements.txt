@@ -7,3 +7,5 @@ oauth2client
 gspread
 python-telegram-bot==13.5
 google-cloud-storage
+google-auth
+google-auth-oauthlib
