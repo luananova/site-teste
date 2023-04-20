@@ -36,8 +36,7 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 # Convertendo a string JSON em um objeto Python
-credentials_dict = json.loads(GOOGLE_APPLICATION_CREDENTIALS)
-credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict)
+credentials=ServiceAccountCredentials.from_json_keyfile_dict(json.loads(GOOGLE_APPLICATION_CREDENTIALS))
 
 # Criando o cliente do Google Cloud Storage
 client = storage.Client(credentials=credentials)
