@@ -238,7 +238,7 @@ def inscrever():
         return menu + render_template_string(erro_html, message="Poxa, não consegui processar as informações. Tente novamente mais tarde.")
       
 # Lidando com as mensagerias no Telegram
-def get_chat_id_by_username(username):
+def get_row_number_by_username(username):
     rows = sheet.get_all_values()
     for index, row in enumerate(rows[1:], start=2):  # Começa a contar a partir da linha 2, ignorando o cabeçalho
         if row[1] == username:
@@ -283,24 +283,15 @@ def start(update: Update, context: CallbackContext):
     username = update.message.from_user.username
     chat_id = update.effective_chat.id
 
-    # Verificando se o usuário já está cadastrado
-    rows = sheet.get_all_values()
-    user_exists = False
-    row_number = 0
-    for row in rows:
-        row_number += 1
-        if first_name in row and username in row:
-            user_exists = True
-            break
-
-    if user_exists:
+    row_number = get_row_number_by_username(username)
+    
+    if row_number:
         # Verificando se o chat_id já está registrado
-        if str(chat_id) == row[row_number - 1][2]:
+        if str(chat_id) == sheet.cell(row_number, 3).value:
             context.bot.send_message(chat_id=chat_id, text=f"Olá, {first_name}! Seu cadastro já foi realizado. Envie 'vagas' para ver as oportunidades disponíveis ou aguarde novas atualizações.")
         else:
             # Atualizando o chat_id na planilha
             sheet.update_cell(row_number, 3, chat_id)
-            update_chat_id(row_number, chat_id)
             context.bot.send_message(chat_id=chat_id, text=f"Olá, {first_name}! Tudo certo com seu cadastro! Envie 'vagas' para ver as oportunidades disponíveis ou aguarde novas atualizações.")
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
@@ -311,17 +302,9 @@ def handle_message(update: Update, context: CallbackContext):
     username = update.message.from_user.username
     chat_id = update.effective_chat.id
 
-    # Verificando se o usuário já está cadastrado
-    rows = sheet.get_all_values()
-    user_exists = False
-    row_number = 0
-    for row in rows:
-        row_number += 1
-        if first_name in row and username in row:
-            user_exists = True
-            break
+    row_number = get_row_number_by_username(username)
 
-    if user_exists:
+    if row_number:
         if sheet.cell(row_number, 3).value:  # Verifica se o chat_id já está na planilha
             message_text = update.message.text.lower()
             if message_text == "vagas":
@@ -332,11 +315,10 @@ def handle_message(update: Update, context: CallbackContext):
                 context.bot.send_message(chat_id=chat_id, text=f"Oi de novo, {first_name}! Aguarde as novas mensagens ou envie 'vagas' para conferir se há atualizações.")
         else:
             sheet.update_cell(row_number, 3, chat_id)  # Atualiza o chat_id na planilha
-            update_chat_id(row_number, chat_id)
             context.bot.send_message(chat_id=chat_id, text="Valeu, deu tudo certo! Agora é só aguardar as vagas de conteúdo chegarem semanalmente por aqui.")
     else:
         reply_markup = telegram.InlineKeyboardMarkup([[telegram.InlineKeyboardButton("Inscreva-se aqui", url="https://site-teste-luana.onrender.com/inscrever")]])
-        context.bot.send_message(chat_id=chat_id, text="Você ainda não se cadastrou para receber vagas. Se inscreva no site para começar a receber!", reply_markup=reply_markup)      
+        context.bot.send_message(chat_id=chat_id, text="Você ainda não se cadastrou para receber vagas. Se inscreva no site para começar a receber!", reply_markup=reply_markup)     
 
 # Adicionando o handler ao dispatcher
 dispatcher.run_async = True
