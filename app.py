@@ -248,7 +248,7 @@ def get_name_by_username(username):
             return row[0]  # Retorna o nome na primeira coluna
     return None
 
-def get_vagas_novas(bucket):
+def get_vagas_novas(bucket_name, client):
     # Baixar os blobs do Google Cloud Storage
     blob_semana_atual = bucket.blob("vagas_da_semana.txt")
     blob_semana_anterior = bucket.blob("vagas_semana_anterior.txt")
@@ -268,7 +268,7 @@ def get_vagas_novas(bucket):
 
     return vagas_novas
 
-vagas_novas = get_vagas_novas(bucket, client)
+vagas_novas = get_vagas_novas(bucket_name, client)
 
 def start(update: Update, context: CallbackContext):
     first_name = update.message.from_user.first_name
@@ -316,7 +316,7 @@ def handle_message(update: Update, context: CallbackContext):
         if sheet.cell(row_number, 3).value:  # Verifica se o chat_id já está na planilha
             message_text = update.message.text.lower()
             if message_text == "vagas":
-                vagas_novas = get_vagas_novas(bucket, client)
+                vagas_novas = get_vagas_novas(bucket_name, client)
                 message = "\n\n".join(vagas_novas) if vagas_novas else "Não há novas vagas no momento. Verifique novamente mais tarde ou aguarde as próximas atualizações semanais."
                 context.bot.send_message(chat_id=chat_id, text="Olha o bonde da vaguinha passando:\n\n{}".format(message))
             else:
