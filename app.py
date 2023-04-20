@@ -24,7 +24,7 @@ TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
 TELEGRAM_BOT_ID = os.environ["TELEGRAM_BOT_ID"]
 
-GOOGLE_CLOUD_CREDENTIALS = os.environ["GOOGLE_CLOUD_CREDENTIALS"]
+GOOGLE_APPLICATION_CREDENTIALS = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
 
 GOOGLE_SHEETS_CREDENTIALS = os.environ["GOOGLE_SHEETS_CREDENTIALS"]
 with open("credenciais.json", mode="w") as arquivo:
@@ -36,7 +36,7 @@ planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
 # Convertendo a string JSON em um objeto Python
-credentials_dict = json.loads(GOOGLE_CLOUD_CREDENTIALS)
+credentials_dict = json.loads(GOOGLE_APPLICATION_CREDENTIALS)
 credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict)
 
 # Criando o cliente do Google Cloud Storage
