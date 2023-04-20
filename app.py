@@ -249,6 +249,7 @@ def get_name_by_username(username):
     return None
 
 def get_vagas_novas(bucket_name, client):
+    bucket = client.get_bucket(bucket_name)
     # Baixar os blobs do Google Cloud Storage
     blob_semana_atual = bucket.blob("vagas_da_semana.txt")
     blob_semana_anterior = bucket.blob("vagas_semana_anterior.txt")
