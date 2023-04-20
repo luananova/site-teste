@@ -9,6 +9,7 @@ import hashlib
 
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 from google.cloud import storage
 from google.api_core.exceptions import NotFound
 
@@ -24,8 +25,6 @@ TELEGRAM_API_KEY = os.environ["TELEGRAM_API_KEY"]
 TELEGRAM_ADMIN_ID = os.environ["TELEGRAM_ADMIN_ID"]
 TELEGRAM_BOT_ID = os.environ["TELEGRAM_BOT_ID"]
 
-GOOGLE_APPLICATION_CREDENTIALS = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-
 GOOGLE_SHEETS_CREDENTIALS = os.environ["GOOGLE_SHEETS_CREDENTIALS"]
 with open("credenciais.json", mode="w") as arquivo:
   arquivo.write(GOOGLE_SHEETS_CREDENTIALS)
@@ -35,10 +34,11 @@ api = gspread.authorize(conta)
 planilha = api.open_by_key('1eIEraunbWiChEgcgIVfGjdFkFaw2ZWAnNAaPAIopgrY')
 sheet = planilha.worksheet('Subscribers')
 
-# Convertendo a string JSON em um objeto Python
-credentials=ServiceAccountCredentials.from_json_keyfile_dict(json.loads(GOOGLE_APPLICATION_CREDENTIALS))
+# Carregando as credenciais do Google Cloud Storage
+credentials_json = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+credentials_info = json.loads(credentials_json)
+credentials = Credentials.from_service_account_info(credentials_info)
 
-# Criando o cliente do Google Cloud Storage
 client = storage.Client(credentials=credentials)
 
 # Criando a rota da aplicação Flask
